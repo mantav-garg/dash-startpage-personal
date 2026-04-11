@@ -6,7 +6,7 @@
 const Tasks = (() => {
   const CACHE_PREFIX = 'tasks_v1:';
   const SCOPE = 'https://www.googleapis.com/auth/tasks';
-  const API   = 'https://tasks.googleapis.com/tasks/v1';
+  const API = 'https://tasks.googleapis.com/tasks/v1';
 
   function sanitize(str) {
     const d = document.createElement('div');
@@ -33,13 +33,23 @@ const Tasks = (() => {
   // ── Google Tasks render ────────────────────────────────────────────────────
 
   function renderGoogleTasks(el, tasks) {
-    const s      = Storage.getSettings();
+    const s = Storage.getSettings();
     const listId = s.tasks_list_id || '@default';
 
     const pending = tasks.filter(t => t.status !== 'completed');
-    const done    = tasks.filter(t => t.status === 'completed');
+    const done = tasks.filter(t => t.status === 'completed');
 
     let html = '';
+
+    // All layout handled by #gtask-add-row and .gtask-add-controls in style.css
+    html += `
+      <div id="gtask-add-row">
+        <div class="gtask-add-controls">
+          <input type="text" id="gtask-input" class="task-text-input" placeholder="new task…">
+          <button id="gtask-add-btn" class="ghost-btn gtask-add-btn">➕</button>
+        </div>
+        <input type="datetime-local" id="gtask-due" class="gtask-due-input">
+      </div>`;
 
     if (pending.length) {
       html += pending.map(t => {
@@ -67,15 +77,7 @@ const Tasks = (() => {
         </div>`).join('');
     }
 
-    // All layout handled by #gtask-add-row and .gtask-add-controls in style.css
-    html += `
-      <div id="gtask-add-row">
-        <div class="gtask-add-controls">
-          <input type="text" id="gtask-input" class="task-text-input" placeholder="new task…">
-          <button id="gtask-add-btn" class="ghost-btn gtask-add-btn">➕</button>
-        </div>
-        <input type="datetime-local" id="gtask-due" class="gtask-due-input">
-      </div>`;
+
 
     el.innerHTML = html;
     bindGoogleTaskEvents(listId);
@@ -83,8 +85,8 @@ const Tasks = (() => {
 
   function bindGoogleTaskEvents(listId) {
     const addBtn = document.getElementById('gtask-add-btn');
-    const input  = document.getElementById('gtask-input');
-    const dueEl  = document.getElementById('gtask-due');
+    const input = document.getElementById('gtask-input');
+    const dueEl = document.getElementById('gtask-due');
 
     const doAdd = async () => {
       const title = (input?.value || '').trim().slice(0, 256);
@@ -108,7 +110,7 @@ const Tasks = (() => {
 
     document.querySelectorAll('.gtask-check').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id     = btn.dataset.id;
+        const id = btn.dataset.id;
         const isDone = btn.dataset.done === 'true';
         btn.style.opacity = '0.4';
         try {
@@ -152,10 +154,17 @@ const Tasks = (() => {
   // ── On-device tasks ────────────────────────────────────────────────────────
 
   function renderLocalTasks(el) {
-    const all     = Storage.getLocalTasks();
+    const all = Storage.getLocalTasks();
     const pending = all.filter(t => !t.done);
-    const done    = all.filter(t =>  t.done);
+    const done = all.filter(t => t.done);
     let html = '';
+
+    // Layout handled by #local-task-input-row in style.css
+    html += `
+      <div id="local-task-input-row">
+        <input type="text" id="local-task-input" class="task-text-input" placeholder="new task…">
+        <button id="local-task-add" class="ghost-btn gtask-add-btn">➕</button>
+      </div>`;
 
     if (pending.length) {
       html += pending.map(t => `
@@ -177,12 +186,6 @@ const Tasks = (() => {
         </div>`).join('');
     }
 
-    // Layout handled by #local-task-input-row in style.css
-    html += `
-      <div id="local-task-input-row">
-        <input type="text" id="local-task-input" class="task-text-input" placeholder="new task…">
-        <button id="local-task-add" class="ghost-btn gtask-add-btn">➕</button>
-      </div>`;
 
     el.innerHTML = html;
     bindLocalTaskEvents();
@@ -228,7 +231,7 @@ const Tasks = (() => {
     const opts = {
       method,
       headers: {
-        Authorization:  `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     };
@@ -237,7 +240,7 @@ const Tasks = (() => {
     if (resp.status === 204) return null;
     if (resp.status === 401) {
       await Storage.clearSessionToken();
-      throw new Error('session expired — click ↻ to reconnect');
+      throw new Error('Session Expired, Reload to Refresh the Token');
     }
     if (!resp.ok) {
       const text = await resp.text();
@@ -264,14 +267,14 @@ const Tasks = (() => {
 
   async function launchAuth(clientId) {
     const redirectUrl = chrome.identity.getRedirectURL();
-    const state       = crypto.randomUUID();
+    const state = crypto.randomUUID();
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    authUrl.searchParams.set('client_id',     clientId);
-    authUrl.searchParams.set('redirect_uri',  redirectUrl);
+    authUrl.searchParams.set('client_id', clientId);
+    authUrl.searchParams.set('redirect_uri', redirectUrl);
     authUrl.searchParams.set('response_type', 'token');
-    authUrl.searchParams.set('scope',         SCOPE);
-    authUrl.searchParams.set('state',         state);
+    authUrl.searchParams.set('scope', SCOPE);
+    authUrl.searchParams.set('state', state);
 
     return new Promise((resolve, reject) => {
       chrome.identity.launchWebAuthFlow(
@@ -281,14 +284,14 @@ const Tasks = (() => {
             reject(new Error(chrome.runtime.lastError?.message || 'auth cancelled'));
             return;
           }
-          const params        = new URLSearchParams(new URL(responseUrl).hash.slice(1));
+          const params = new URLSearchParams(new URL(responseUrl).hash.slice(1));
           const returnedState = params.get('state');
-          const token         = params.get('access_token');
-          const error         = params.get('error');
+          const token = params.get('access_token');
+          const error = params.get('error');
 
-          if (error)                   { reject(new Error(error)); return; }
+          if (error) { reject(new Error(error)); return; }
           if (returnedState !== state) { reject(new Error('state mismatch')); return; }
-          if (!token)                  { reject(new Error('no token returned')); return; }
+          if (!token) { reject(new Error('no token returned')); return; }
 
           const expiresIn = parseInt(params.get('expires_in') || '3600', 10);
           resolve({ access_token: token, expires_at: Date.now() + expiresIn * 1000 });
@@ -352,22 +355,22 @@ const Tasks = (() => {
 
     const token = await getValidToken();
     if (!token) {
-      renderList(null, 'session expired — click ↻ to reconnect', null);
+      renderList(null, 'Session Expired, Reload to Refresh the Token', null);
       return;
     }
 
-    const id   = encodeURIComponent(listId || '@default');
-    const url  = `${API}/lists/${id}/tasks?showCompleted=true&maxResults=20`;
+    const id = encodeURIComponent(listId || '@default');
+    const url = `${API}/lists/${id}/tasks?showCompleted=true&maxResults=20`;
     const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
 
     if (resp.status === 401) {
       await Storage.clearSessionToken();
-      renderList(null, 'session expired — click ↻ to reconnect', null);
+      renderList(null, 'Session Expired, Reload to Refresh the Token', null);
       return;
     }
     if (!resp.ok) { renderList(null, `error ${resp.status}`, null); return; }
 
-    const data  = await resp.json();
+    const data = await resp.json();
     const tasks = (data.items || []).filter(t => t.title);
     Storage.setCachedTasks(cacheKey, tasks);
     renderList(tasks, null, null);
@@ -381,7 +384,7 @@ const Tasks = (() => {
     });
     if (resp.status === 401) {
       await Storage.clearSessionToken();
-      throw new Error('session expired — reconnect in Settings');
+      throw new Error('Session Expired, Reload to Refresh the Token');
     }
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return resp.json();
@@ -390,7 +393,7 @@ const Tasks = (() => {
   // ── Init ───────────────────────────────────────────────────────────────────
 
   async function init() {
-    const s   = Storage.getSettings();
+    const s = Storage.getSettings();
     const col = document.getElementById('tasks-col');
     const btn = document.getElementById('task-refresh');
 
@@ -402,9 +405,9 @@ const Tasks = (() => {
         await loadGoogleTasks(s.tasks_list_id, false);
       } else {
         const cacheKey = `${CACHE_PREFIX}${s.tasks_list_id || '@default'}`;
-        const cached   = Storage.getCachedTasks(cacheKey);
+        const cached = Storage.getCachedTasks(cacheKey);
         if (cached) renderList(cached, null, null);
-        else        renderList(null, 'session expired — click ↻ to reconnect', null);
+        else renderList(null, 'Session Expired, Reload to Refresh the Token', null);
       }
       if (btn) btn.addEventListener('click', () => reloadOrReconnect(s.tasks_list_id));
     } else {
