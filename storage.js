@@ -3,19 +3,20 @@
 // Everything else → localStorage (no credentials ever).
 
 const DEFAULTS = {
-  name:            'User',
-  clock_format:    '24h',
-  greeting_custom: '',
-  font:            'JetBrains Mono',
-  color_bg:        '#0d0d0d',
-  color_surface:   '#161616',
-  color_border:    '#2a2a2a',
-  color_text:      '#e0e0e0',
-  color_muted:     '#555555',
-  color_accent:    '#7fba00',
-  show_tasks:      true,
-  tasks_list_id:   '',
-  saved_palettes:  [],
+  name:                'User',
+  clock_format:        '24h',
+  greeting_custom:     '',
+  font:                'JetBrains Mono',
+  color_bg:            '#0d0d0d',
+  color_surface:       '#161616',
+  color_border:        '#2a2a2a',
+  color_text:          '#e0e0e0',
+  color_muted:         '#555555',
+  color_accent:        '#7fba00',
+  show_tasks:          true,
+  tasks_list_id:       '',
+  saved_palettes:      [],
+  google_auth_enabled: false,
 };
 
 const DEFAULT_BOOKMARKS = [
@@ -27,8 +28,11 @@ const DEFAULT_BOOKMARKS = [
   { id: '6', title: 'Lobste.rs',     url: 'https://lobste.rs',             category: 'Reading' },
 ];
 
-const FAVICON_TTL = 7  * 24 * 60 * 60 * 1000;
-const TASKS_TTL   = 5  * 60 * 1000;
+// Cached data URLs are refreshed weekly. Failed (4xx) entries are suppressed
+// for 90 days so we never hit a dead URL again until it might have come back.
+const FAVICON_TTL      =  7 * 24 * 60 * 60 * 1000;
+const FAVICON_FAIL_TTL = 90 * 24 * 60 * 60 * 1000;
+const TASKS_TTL        =  5 * 60 * 1000;
 
 const Storage = (() => {
   // ── Settings ──────────────────────────────────────────────────────────────
@@ -45,6 +49,7 @@ const Storage = (() => {
   function saveSettings(s) {
     const safe = Object.assign({}, s);
     delete safe.tasks_token;
+    delete safe.oauth_client_secret;
     localStorage.setItem('sp_settings', JSON.stringify(safe));
   }
 
@@ -62,10 +67,13 @@ const Storage = (() => {
   }
 
   // ── Favicon cache ──────────────────────────────────────────────────────────
-  // Entries: { url, ts, failed? }
-  // failed entries are kept with a shorter TTL (1 day) to avoid hammering 404s
-
-  const FAVICON_FAIL_TTL = 90 * 24 * 60 * 60 * 1000; // 90 days — do not retry missing favicons
+  //
+  // Entries: { dataUrl: string|null, ts: number, failed: boolean }
+  //
+  // getFavicon return contract:
+  //   undefined  → not cached (or TTL expired); caller must fetch
+  //   null       → confirmed 4xx; show placeholder, never re-fetch until 90d
+  //   string     → cached data URL (data:image/...); use directly, zero HTTP
 
   function getFaviconCache() {
     try {
@@ -76,31 +84,24 @@ const Storage = (() => {
 
   function getFavicon(domain) {
     const cache = getFaviconCache();
-    const now   = Date.now();
     const entry = cache[domain];
+    if (!entry) return undefined;
 
-    if (entry) {
-      const ttl = entry.failed ? FAVICON_FAIL_TTL : FAVICON_TTL;
-      if ((now - entry.ts) < ttl) {
-        return entry.failed ? null : entry.url;
-      }
-    }
+    const ttl = entry.failed ? FAVICON_FAIL_TTL : FAVICON_TTL;
+    if (Date.now() - entry.ts >= ttl) return undefined; // expired
 
-    // Not in cache yet — return URL without caching.
-    // bookmarks.js will call markFaviconOk on img.onload, or markFaviconFailed on img.onerror.
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
+    return entry.failed ? null : (entry.dataUrl || undefined);
+  }
+
+  function markFaviconOk(domain, dataUrl) {
+    const cache = getFaviconCache();
+    cache[domain] = { dataUrl, ts: Date.now(), failed: false };
+    localStorage.setItem('sp_favicons', JSON.stringify(cache));
   }
 
   function markFaviconFailed(domain) {
     const cache = getFaviconCache();
-    cache[domain] = { url: null, ts: Date.now(), failed: true };
-    localStorage.setItem('sp_favicons', JSON.stringify(cache));
-  }
-
-  function markFaviconOk(domain) {
-    const url   = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=32`;
-    const cache = getFaviconCache();
-    cache[domain] = { url, ts: Date.now(), failed: false };
+    cache[domain] = { dataUrl: null, ts: Date.now(), failed: true };
     localStorage.setItem('sp_favicons', JSON.stringify(cache));
   }
 
@@ -167,7 +168,7 @@ const Storage = (() => {
   return {
     getSettings, saveSettings,
     getBookmarks, saveBookmarks,
-    getFavicon, markFaviconFailed, markFaviconOk,
+    getFavicon, markFaviconOk, markFaviconFailed,
     getCachedTasks, setCachedTasks, invalidateTasksCache,
     getLocalTasks, saveLocalTasks,
     getSessionToken, setSessionToken, clearSessionToken,

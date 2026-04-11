@@ -145,7 +145,6 @@ function bindPalette() {
     const s        = Storage.getSettings();
     const palettes = Array.isArray(s.saved_palettes) ? s.saved_palettes : [];
     const colors   = getCurrentColors();
-    // Overwrite if same name
     const idx = palettes.findIndex(p => p.name === name);
     if (idx >= 0) palettes[idx] = { name, colors };
     else palettes.push({ name, colors });
@@ -178,7 +177,7 @@ function renderPaletteList() {
     for (const { key } of COLOR_FIELDS) {
       const sw = document.createElement('span');
       sw.className = 'swatch';
-      sw.style.background = p.colors[key] || '#000';
+      sw.style.background = p.colors[key] || '#000'; // JS property — not blocked by CSP
       sw.title = `${key}: ${p.colors[key]}`;
       swatches.appendChild(sw);
     }
@@ -250,8 +249,8 @@ function bindAuthButtons() {
     const statusEl = document.getElementById('auth-status');
     const s        = Storage.getSettings();
 
-    if (!s.oauth_client_id || !s.oauth_client_secret) {
-      statusEl.textContent = 'enter client ID and secret above, then save';
+    if (!s.oauth_client_id) {
+      statusEl.textContent = 'enter client ID above, then save';
       statusEl.style.color = '#e05252';
       return;
     }
@@ -284,14 +283,13 @@ function loadSettingsForm() {
   document.getElementById('s-name').value      = s.name;
   document.getElementById('s-greeting').value  = s.greeting_custom;
   document.querySelector(`input[name="clock_format"][value="${s.clock_format}"]`).checked = true;
-  document.getElementById('s-show-tasks').checked       = !!s.show_tasks;
-  document.getElementById('s-tasks-list').value           = s.tasks_list_id;
-  document.getElementById('s-oauth-client-id').value     = s.oauth_client_id || '';
-  document.getElementById('s-oauth-client-secret').value = s.oauth_client_secret || '';
+  document.getElementById('s-show-tasks').checked    = !!s.show_tasks;
+  document.getElementById('s-tasks-list').value      = s.tasks_list_id;
+  document.getElementById('s-oauth-client-id').value = s.oauth_client_id || '';
 
-  // Show the redirect URI the user needs to register in Google Cloud Console
   const redirectEl = document.getElementById('redirect-uri-display');
   if (redirectEl) redirectEl.textContent = chrome.identity.getRedirectURL();
+
   buildFontSelect(s.font);
   updateFontPreview(s.font);
   buildColorGrid(s);
@@ -308,9 +306,9 @@ function bindSave() {
     s.greeting_custom = sanitizeStr(document.getElementById('s-greeting').value, 128);
     s.clock_format    = document.querySelector('input[name="clock_format"]:checked')?.value === '12h' ? '12h' : '24h';
     s.show_tasks      = document.getElementById('s-show-tasks').checked;
-    s.tasks_list_id      = sanitizeStr(document.getElementById('s-tasks-list').value, 128);
-    s.oauth_client_id    = sanitizeStr(document.getElementById('s-oauth-client-id').value, 256);
-    s.oauth_client_secret= sanitizeStr(document.getElementById('s-oauth-client-secret').value, 128);
+    s.tasks_list_id   = sanitizeStr(document.getElementById('s-tasks-list').value, 128);
+    s.oauth_client_id = sanitizeStr(document.getElementById('s-oauth-client-id').value, 256);
+    // oauth_client_secret intentionally not stored — implicit flow needs no secret
     const selFont     = document.getElementById('s-font').value;
     s.font            = FONTS.includes(selFont) ? selFont : 'JetBrains Mono';
     for (const { key } of COLOR_FIELDS) {
@@ -332,7 +330,6 @@ function renderBookmarkTable() {
   const tbody    = document.getElementById('bm-tbody');
   const datalist = document.getElementById('cat-list');
 
-  // Sort: by category then title
   const sorted = [...bms].sort((a, b) => {
     const cc = a.category.localeCompare(b.category);
     return cc !== 0 ? cc : a.title.localeCompare(b.title);
@@ -349,11 +346,11 @@ function renderBookmarkTable() {
 
     if (isEditing) {
       tr.innerHTML = `
-        <td><input type="text" class="edit-title" value="${escHtml(bm.title)}" maxlength="128" style="width:100%"></td>
-        <td><input type="url"  class="edit-url"   value="${escHtml(bm.url)}"   maxlength="512" style="width:100%"></td>
-        <td><input type="text" class="edit-cat"   value="${escHtml(bm.category)}" maxlength="64" list="cat-list" style="width:100%"></td>
-        <td style="white-space:nowrap">
-          <button class="ghost-btn save-edit-btn" data-id="${escHtml(bm.id)}" style="margin-right:4px">save</button>
+        <td><input type="text" class="edit-title" value="${escHtml(bm.title)}" maxlength="128"></td>
+        <td><input type="url"  class="edit-url"   value="${escHtml(bm.url)}"   maxlength="512"></td>
+        <td><input type="text" class="edit-cat"   value="${escHtml(bm.category)}" maxlength="64" list="cat-list"></td>
+        <td class="td-nowrap">
+          <button class="ghost-btn save-edit-btn" data-id="${escHtml(bm.id)}">save</button>
           <button class="danger-btn cancel-edit-btn">✕</button>
         </td>`;
     } else {
@@ -361,25 +358,22 @@ function renderBookmarkTable() {
         <td>${escHtml(bm.title)}</td>
         <td class="url-cell" title="${escHtml(bm.url)}">${escHtml(bm.url)}</td>
         <td>${escHtml(bm.category)}</td>
-        <td style="white-space:nowrap">
-          <button class="ghost-btn edit-btn" data-id="${escHtml(bm.id)}" style="margin-right:4px">edit</button>
-          <button class="danger-btn del-btn" data-id="${escHtml(bm.id)}">del</button>
+        <td class="td-nowrap">
+          <button class="ghost-btn edit-btn" data-id="${escHtml(bm.id)}">edit</button>
+          <button class="danger-btn del-btn"  data-id="${escHtml(bm.id)}">del</button>
         </td>`;
     }
     tbody.appendChild(tr);
   }
 
-  // Edit button
   tbody.querySelectorAll('.edit-btn').forEach(btn => {
     btn.addEventListener('click', () => { editingId = btn.dataset.id; renderBookmarkTable(); });
   });
 
-  // Cancel edit
   tbody.querySelectorAll('.cancel-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => { editingId = null; renderBookmarkTable(); });
   });
 
-  // Save edit
   tbody.querySelectorAll('.save-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const id    = btn.dataset.id;
@@ -403,7 +397,6 @@ function renderBookmarkTable() {
     });
   });
 
-  // Delete
   tbody.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const updated = Storage.getBookmarks().filter(b => b.id !== btn.dataset.id);
@@ -447,8 +440,9 @@ function bindFetchLists() {
       const data  = await Tasks.fetchLists();
       const items = data.items || [];
       if (!items.length) { el.textContent = 'no lists found'; return; }
+      // Use CSS classes — no inline style="" attributes
       el.innerHTML = items.map(i =>
-        `<div style="margin:3px 0"><code style="color:var(--accent)">${escHtml(i.id)}</code> — ${escHtml(i.title)}</div>`
+        `<div class="task-list-item"><code class="task-list-id">${escHtml(i.id)}</code> — ${escHtml(i.title)}</div>`
       ).join('');
     } catch (e) { el.textContent = `error: ${e.message}`; }
   });
@@ -457,12 +451,13 @@ function bindFetchLists() {
 // ── Export / Import ────────────────────────────────────────────────────────────
 
 function bindExportImport() {
-  // Export
   document.getElementById('export-btn').addEventListener('click', () => {
+    const s = Storage.getSettings();
+    const { oauth_client_id, google_auth_enabled, ...exportSettings } = s;
     const payload = {
       version:   3,
       exported:  new Date().toISOString(),
-      settings:  Storage.getSettings(),
+      settings:  exportSettings,
       bookmarks: Storage.getBookmarks(),
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -475,7 +470,6 @@ function bindExportImport() {
     showToast('exported.');
   });
 
-  // Import
   document.getElementById('import-file').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -490,7 +484,10 @@ function bindExportImport() {
 
         if (data.settings && typeof data.settings === 'object') {
           const s = Object.assign({}, Storage.DEFAULTS, data.settings);
-          delete s.tasks_token; // never import credentials
+          delete s.tasks_token;
+          delete s.oauth_client_secret;
+          delete s.oauth_client_id;
+          delete s.google_auth_enabled;
           Storage.saveSettings(s);
           imported++;
         }

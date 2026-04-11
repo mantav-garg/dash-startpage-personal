@@ -1,11 +1,10 @@
 // Tasks module.
-// Auth: chrome.identity.launchWebAuthFlow, implicit flow (unpacked extension).
-// Token in chrome.storage.session (RAM only).
+// Auth: chrome.identity.launchWebAuthFlow, implicit flow (token only — no secret needed).
+// Token in chrome.storage.session (RAM only, cleared on browser close).
 // Falls back to on-device tasks when not connected.
 
 const Tasks = (() => {
   const CACHE_PREFIX = 'tasks_v1:';
-  // Full read/write scope — needed for complete, add, delete
   const SCOPE = 'https://www.googleapis.com/auth/tasks';
   const API   = 'https://tasks.googleapis.com/tasks/v1';
 
@@ -21,19 +20,10 @@ const Tasks = (() => {
     const el = document.getElementById('task-list');
     if (!el) return;
 
-    if (mode === 'connect') {
-      el.innerHTML = `<div class="task-item">
-        <span><button id="connect-tasks-btn" class="ghost-btn" style="font-size:10px">connect google tasks</button></span>
-      </div>`;
-      document.getElementById('connect-tasks-btn')
-        ?.addEventListener('click', () => connectAndLoad());
-      return;
-    }
-
     if (mode === 'local') { renderLocalTasks(el); return; }
 
     if (error) {
-      el.innerHTML = `<div class="task-item" style="color:#e05252"><span>${sanitize(error)}</span></div>`;
+      el.innerHTML = `<div class="task-item task-error-msg"><span>${sanitize(error)}</span></div>`;
       return;
     }
 
@@ -53,13 +43,15 @@ const Tasks = (() => {
 
     if (pending.length) {
       html += pending.map(t => {
-        const due = t.due ? new Date(t.due).toLocaleDateString(undefined, { month:'short', day:'numeric' }) : '';
+        const due = t.due
+          ? new Date(t.due).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+          : '';
         return `
         <div class="task-item gtask" data-id="${sanitize(t.id)}">
-          <span class="gtask-check" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" title="mark complete">○</span>
+          <span class="gtask-check" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" title="mark complete">✅</span>
           <span class="local-task-title" title="${sanitize(t.title)}">${sanitize(t.title)}</span>
           ${due ? `<span class="gtask-due">${sanitize(due)}</span>` : ''}
-          <span class="local-task-del gtask-del" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" title="delete">×</span>
+          <span class="local-task-del gtask-del" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" title="delete">❌</span>
         </div>`;
       }).join('');
     } else {
@@ -68,23 +60,21 @@ const Tasks = (() => {
 
     if (done.length) {
       html += done.map(t => `
-        <div class="task-item gtask" style="opacity:0.38" data-id="${sanitize(t.id)}">
-          <span class="gtask-check" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" data-done="true" title="mark incomplete">●</span>
-          <span class="local-task-title" style="text-decoration:line-through;text-decoration-color:var(--accent)">${sanitize(t.title)}</span>
-          <span class="local-task-del gtask-del" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" title="delete">×</span>
+        <div class="task-item gtask task-done" data-id="${sanitize(t.id)}">
+          <span class="gtask-check" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" data-done="true" title="mark incomplete">↩️</span>
+          <span class="local-task-title task-strikethrough">${sanitize(t.title)}</span>
+          <span class="local-task-del gtask-del" data-id="${sanitize(t.id)}" data-list="${sanitize(listId)}" title="delete">❌</span>
         </div>`).join('');
     }
 
-    // Add task row
+    // All layout handled by #gtask-add-row and .gtask-add-controls in style.css
     html += `
-      <div id="gtask-add-row" style="margin-top:10px;display:flex;flex-direction:column;gap:5px">
-        <div style="display:flex;gap:6px">
-          <input type="text" id="gtask-input" placeholder="new task…"
-            style="flex:1;font-size:11px;padding:4px 7px;min-width:0">
-          <button id="gtask-add-btn" class="ghost-btn" style="padding:3px 8px;font-size:10px">+</button>
+      <div id="gtask-add-row">
+        <div class="gtask-add-controls">
+          <input type="text" id="gtask-input" class="task-text-input" placeholder="new task…">
+          <button id="gtask-add-btn" class="ghost-btn gtask-add-btn">➕</button>
         </div>
-        <input type="datetime-local" id="gtask-due"
-          style="font-size:10px;padding:3px 7px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:3px;font-family:var(--font)">
+        <input type="datetime-local" id="gtask-due" class="gtask-due-input">
       </div>`;
 
     el.innerHTML = html;
@@ -92,7 +82,6 @@ const Tasks = (() => {
   }
 
   function bindGoogleTaskEvents(listId) {
-    // Add task
     const addBtn = document.getElementById('gtask-add-btn');
     const input  = document.getElementById('gtask-input');
     const dueEl  = document.getElementById('gtask-due');
@@ -104,8 +93,8 @@ const Tasks = (() => {
       addBtn.disabled = true;
       try {
         await apiAddTask(listId, title, due);
-        input.value  = '';
-        dueEl.value  = '';
+        input.value = '';
+        dueEl.value = '';
         await reloadGoogleTasks(listId);
       } catch (e) {
         showInlineError(e.message);
@@ -117,7 +106,6 @@ const Tasks = (() => {
     addBtn?.addEventListener('click', doAdd);
     input?.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
 
-    // Complete / uncomplete
     document.querySelectorAll('.gtask-check').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id     = btn.dataset.id;
@@ -133,7 +121,6 @@ const Tasks = (() => {
       });
     });
 
-    // Delete
     document.querySelectorAll('.gtask-del').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
@@ -151,9 +138,7 @@ const Tasks = (() => {
     const el = document.getElementById('task-list');
     if (!el) return;
     const err = document.createElement('div');
-    err.className = 'task-item';
-    err.style.color = '#e05252';
-    err.style.fontSize = '10px';
+    err.className = 'task-item task-inline-err';
     err.textContent = msg;
     el.prepend(err);
     setTimeout(() => err.remove(), 4000);
@@ -175,9 +160,9 @@ const Tasks = (() => {
     if (pending.length) {
       html += pending.map(t => `
         <div class="task-item local-task">
-          <span class="local-task-check" data-id="${sanitize(t.id)}" data-done="false" title="mark done">○</span>
+          <span class="local-task-check" data-id="${sanitize(t.id)}" data-done="false" title="mark done">✅</span>
           <span class="local-task-title">${sanitize(t.title)}</span>
-          <span class="local-task-del" data-id="${sanitize(t.id)}" title="delete">×</span>
+          <span class="local-task-del" data-id="${sanitize(t.id)}" title="delete">❌</span>
         </div>`).join('');
     } else {
       html += `<div class="task-item muted"><span>no pending tasks</span></div>`;
@@ -185,18 +170,19 @@ const Tasks = (() => {
 
     if (done.length) {
       html += done.map(t => `
-        <div class="task-item local-task" style="opacity:0.38">
-          <span class="local-task-check" data-id="${sanitize(t.id)}" data-done="true" title="mark undone">●</span>
-          <span class="local-task-title" style="text-decoration:line-through;text-decoration-color:var(--accent)">${sanitize(t.title)}</span>
-          <span class="local-task-del" data-id="${sanitize(t.id)}" title="delete">×</span>
+        <div class="task-item local-task task-done">
+          <span class="local-task-check" data-id="${sanitize(t.id)}" data-done="true" title="mark undone">↩️</span>
+          <span class="local-task-title task-strikethrough">${sanitize(t.title)}</span>
+          <span class="local-task-del" data-id="${sanitize(t.id)}" title="delete">❌</span>
         </div>`).join('');
     }
 
-    html += `<div id="local-task-input-row" style="margin-top:8px;display:flex;gap:6px">
-      <input type="text" id="local-task-input" placeholder="new task…"
-        style="flex:1;font-size:11px;padding:4px 7px;min-width:0">
-      <button id="local-task-add" class="ghost-btn" style="padding:3px 8px;font-size:10px">+</button>
-    </div>`;
+    // Layout handled by #local-task-input-row in style.css
+    html += `
+      <div id="local-task-input-row">
+        <input type="text" id="local-task-input" class="task-text-input" placeholder="new task…">
+        <button id="local-task-add" class="ghost-btn gtask-add-btn">➕</button>
+      </div>`;
 
     el.innerHTML = html;
     bindLocalTaskEvents();
@@ -248,8 +234,11 @@ const Tasks = (() => {
     };
     if (body) opts.body = JSON.stringify(body);
     const resp = await fetch(`${API}${path}`, opts);
-    if (resp.status === 204) return null; // DELETE returns no body
-    if (resp.status === 401) { await Storage.clearSessionToken(); throw new Error('session expired — reconnect'); }
+    if (resp.status === 204) return null;
+    if (resp.status === 401) {
+      await Storage.clearSessionToken();
+      throw new Error('session expired — click ↻ to reconnect');
+    }
     if (!resp.ok) {
       const text = await resp.text();
       throw new Error(`API error ${resp.status}: ${text}`);
@@ -273,12 +262,8 @@ const Tasks = (() => {
 
   // ── OAuth implicit flow ────────────────────────────────────────────────────
 
-  function getRedirectUrl() {
-    return chrome.identity.getRedirectURL();
-  }
-
   async function launchAuth(clientId) {
-    const redirectUrl = getRedirectUrl();
+    const redirectUrl = chrome.identity.getRedirectURL();
     const state       = crypto.randomUUID();
 
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -325,20 +310,29 @@ const Tasks = (() => {
     if (!s.oauth_client_id) throw new Error('set client ID in Settings → Tasks first');
     const tokens = await launchAuth(s.oauth_client_id);
     await Storage.setSessionToken(tokens);
-  }
-
-  async function connectAndLoad() {
-    const s = Storage.getSettings();
-    try {
-      await connect();
-      await loadGoogleTasks(s.tasks_list_id, false);
-    } catch (e) {
-      renderList(null, e.message, null);
-    }
+    s.google_auth_enabled = true;
+    Storage.saveSettings(s);
   }
 
   async function disconnect() {
     await Storage.clearSessionToken();
+    const s = Storage.getSettings();
+    s.google_auth_enabled = false;
+    Storage.saveSettings(s);
+  }
+
+  async function reloadOrReconnect(listId) {
+    const token = await getValidToken();
+    if (token) { await loadGoogleTasks(listId, true); return; }
+
+    const el = document.getElementById('task-list');
+    if (el) el.innerHTML = `<div class="task-item muted"><span>reconnecting…</span></div>`;
+    try {
+      await connect();
+      await loadGoogleTasks(listId, true);
+    } catch (e) {
+      renderList(null, e.message, null);
+    }
   }
 
   // ── Google Tasks fetch ─────────────────────────────────────────────────────
@@ -353,18 +347,24 @@ const Tasks = (() => {
       Storage.invalidateTasksCache(cacheKey);
     }
 
-    document.getElementById('task-list').innerHTML =
-      `<div class="task-item muted"><span>fetching…</span></div>`;
+    const el = document.getElementById('task-list');
+    if (el) el.innerHTML = `<div class="task-item muted"><span>fetching…</span></div>`;
 
     const token = await getValidToken();
-    if (!token) { renderList(null, null, 'connect'); return; }
+    if (!token) {
+      renderList(null, 'session expired — click ↻ to reconnect', null);
+      return;
+    }
 
     const id   = encodeURIComponent(listId || '@default');
-    // showCompleted=true so we can display and uncomplete them
     const url  = `${API}/lists/${id}/tasks?showCompleted=true&maxResults=20`;
     const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
 
-    if (resp.status === 401) { await Storage.clearSessionToken(); renderList(null, null, 'connect'); return; }
+    if (resp.status === 401) {
+      await Storage.clearSessionToken();
+      renderList(null, 'session expired — click ↻ to reconnect', null);
+      return;
+    }
     if (!resp.ok) { renderList(null, `error ${resp.status}`, null); return; }
 
     const data  = await resp.json();
@@ -379,6 +379,10 @@ const Tasks = (() => {
     const resp = await fetch(`${API}/users/@me/lists`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (resp.status === 401) {
+      await Storage.clearSessionToken();
+      throw new Error('session expired — reconnect in Settings');
+    }
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return resp.json();
   }
@@ -392,11 +396,17 @@ const Tasks = (() => {
 
     if (!s.show_tasks) { if (col) col.style.display = 'none'; return; }
 
-    const token = await getValidToken();
-
-    if (token) {
-      await loadGoogleTasks(s.tasks_list_id, false);
-      if (btn) btn.addEventListener('click', () => loadGoogleTasks(s.tasks_list_id, true));
+    if (s.google_auth_enabled) {
+      const token = await getValidToken();
+      if (token) {
+        await loadGoogleTasks(s.tasks_list_id, false);
+      } else {
+        const cacheKey = `${CACHE_PREFIX}${s.tasks_list_id || '@default'}`;
+        const cached   = Storage.getCachedTasks(cacheKey);
+        if (cached) renderList(cached, null, null);
+        else        renderList(null, 'session expired — click ↻ to reconnect', null);
+      }
+      if (btn) btn.addEventListener('click', () => reloadOrReconnect(s.tasks_list_id));
     } else {
       renderList(null, null, 'local');
       if (btn) btn.addEventListener('click', () => renderList(null, null, 'local'));

@@ -94,15 +94,9 @@
       <label>Client ID</label>
       <div>
         <input type="text" id="s-oauth-client-id" maxlength="256" placeholder="xxxxxx.apps.googleusercontent.com">
-        <div class="hint">from Google Cloud Console → Credentials → Web application</div>
-      </div>
-    </div>
-    <div class="s-row">
-      <label>Client secret</label>
-      <div>
-        <input type="password" id="s-oauth-client-secret" maxlength="128" placeholder="GOCSPX-…">
         <div class="hint">
-          redirect URI to add in Cloud Console:<br>
+          from Google Cloud Console → Credentials → OAuth client ID (Chrome extension)<br>
+          redirect URI to register in Cloud Console:<br>
           <code id="redirect-uri-display" style="color:var(--accent);font-size:10px;user-select:all">loading…</code>
         </div>
       </div>
@@ -156,14 +150,9 @@
   <!-- Bookmarks -->
   <section class="s-section" style="margin-top:48px">
     <div class="s-title">bookmarks</div>
-    <table id="bm-table">
-      <thead>
-        <tr><th>title</th><th>url</th><th>category</th><th></th></tr>
-      </thead>
-      <tbody id="bm-tbody"></tbody>
-    </table>
 
-    <div class="add-bm-form">
+    <!-- Add form at top so it's immediately visible -->
+    <div class="add-bm-form" style="margin-bottom:20px">
       <div class="add-field">
         <label>title</label>
         <input type="text" id="bm-title" maxlength="128" placeholder="GitHub">
@@ -181,7 +170,14 @@
         <button id="bm-add" class="primary-btn">add</button>
       </div>
     </div>
-    <div id="bm-error" class="hint" style="color:#e05252;margin-top:6px"></div>
+    <div id="bm-error" class="hint" style="color:#e05252;margin-bottom:10px"></div>
+
+    <table id="bm-table">
+      <thead>
+        <tr><th>title</th><th>url</th><th>category</th><th></th></tr>
+      </thead>
+      <tbody id="bm-tbody"></tbody>
+    </table>
   </section>
 </div>
 

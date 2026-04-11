@@ -264,8 +264,16 @@ html, body { overflow: auto !important; height: auto !important; }
   padding: 3px 6px;
 }
 
-/* Edit/del buttons tighter */
-.edit-btn {
+/* Edit/del/save buttons in table rows */
+.edit-btn, .save-edit-btn {
   padding: 3px 8px;
   font-size: 10px;
 }
+.save-edit-btn { margin-right: 4px; }
+
+/* td that contains action buttons — replaces style="white-space:nowrap" */
+.td-nowrap { white-space: nowrap; }
+
+/* Task list items rendered by bindFetchLists */
+.task-list-item { margin: 3px 0; }
+.task-list-id   { color: var(--accent); }
