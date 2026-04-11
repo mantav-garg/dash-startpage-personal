@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💀 Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link id="font-link" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav id="top-nav">
+  <a id="settings-btn" href="settings.html">[ settings ]</a>
+</nav>
+
+<main id="main">
+  <section id="hero">
+    <div id="greeting"></div>
+    <div id="clock">
+      <span id="clock-h">00</span><span class="sep">:</span><span id="clock-m">00</span><span id="clock-ampm"></span>
+    </div>
+    <div id="date-line"></div>
+  </section>
+
+  <div id="content-row">
+    <section id="tasks-col">
+      <div class="sec-label">tasks</div>
+      <div id="task-list">
+        <div class="task-item muted">loading…</div>
+      </div>
+      <button id="task-refresh" class="ghost-btn">↻ refresh</button>
+    </section>
+
+    <section id="bookmarks-col">
+      <div class="sec-label">bookmarks</div>
+      <div id="bookmark-grid"></div>
+    </section>
+  </div>
+</main>
+
+<script src="storage.js"></script>
+<script src="clock.js"></script>
+<script src="bookmarks.js"></script>
+<script src="tasks.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

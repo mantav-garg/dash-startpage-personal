@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💀 Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link id="font-link" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+<nav id="top-nav">
+  <a id="settings-btn" href="index.html">[ ← back ]</a>
+</nav>
+
+<div id="settings-wrap">
+  <div id="settings-header">
+    <h1>settings</h1>
+    <p>customize your startpage</p>
+  </div>
+
+  <!-- General -->
+  <section class="s-section">
+    <div class="s-title">general</div>
+    <div class="s-row">
+      <label>Your name</label>
+      <input type="text" id="s-name" maxlength="64" placeholder="User">
+    </div>
+    <div class="s-row">
+      <label>Custom greeting</label>
+      <div>
+        <input type="text" id="s-greeting" maxlength="128" placeholder="good to see you,">
+        <div class="hint">leave blank for default</div>
+      </div>
+    </div>
+    <div class="s-row">
+      <label>Clock format</label>
+      <div class="radio-group">
+        <label class="radio-opt"><input type="radio" name="clock_format" value="24h"> 24h</label>
+        <label class="radio-opt"><input type="radio" name="clock_format" value="12h"> 12h</label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Appearance -->
+  <section class="s-section">
+    <div class="s-title">appearance</div>
+    <div class="s-row">
+      <label>Font</label>
+      <div>
+        <select id="s-font"></select>
+        <div id="font-preview" class="hint">the quick brown fox jumps over the lazy dog</div>
+      </div>
+    </div>
+    <div class="s-row" style="align-items:flex-start">
+      <label style="padding-top:6px">Colors</label>
+      <div class="color-grid" id="color-grid"></div>
+    </div>
+    <div class="s-row">
+      <label></label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button id="reset-colors" class="ghost-btn">reset to defaults</button>
+      </div>
+    </div>
+
+    <!-- Palette save/apply -->
+    <div class="s-row" style="align-items:flex-start;margin-top:16px">
+      <label style="padding-top:6px">Palettes</label>
+      <div style="width:100%">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="text" id="palette-name" maxlength="48" placeholder="palette name…" style="flex:1;max-width:200px">
+          <button id="save-palette-btn" class="ghost-btn">save current</button>
+        </div>
+        <div id="palette-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Google Tasks -->
+  <section class="s-section">
+    <div class="s-title">tasks</div>
+    <div class="s-row">
+      <label>Show tasks</label>
+      <label class="toggle">
+        <input type="checkbox" id="s-show-tasks">
+        <span class="track"></span>
+        <span class="toggle-label">enabled</span>
+      </label>
+    </div>
+    <div class="s-row">
+      <label>Client ID</label>
+      <div>
+        <input type="text" id="s-oauth-client-id" maxlength="256" placeholder="xxxxxx.apps.googleusercontent.com">
+        <div class="hint">from Google Cloud Console → Credentials → Web application</div>
+      </div>
+    </div>
+    <div class="s-row">
+      <label>Client secret</label>
+      <div>
+        <input type="password" id="s-oauth-client-secret" maxlength="128" placeholder="GOCSPX-…">
+        <div class="hint">
+          redirect URI to add in Cloud Console:<br>
+          <code id="redirect-uri-display" style="color:var(--accent);font-size:10px;user-select:all">loading…</code>
+        </div>
+      </div>
+    </div>
+    <div class="s-row">
+      <label>Account</label>
+      <div>
+        <div id="auth-status" class="hint">checking…</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="connect-btn" class="primary-btn" style="display:none">connect google account</button>
+          <button id="disconnect-btn" class="ghost-btn danger-btn" style="display:none">disconnect</button>
+        </div>
+        <div class="hint" style="margin-top:6px">when not connected, on-device tasks are shown instead</div>
+      </div>
+    </div>
+    <div class="s-row">
+      <label>Task list</label>
+      <div>
+        <input type="text" id="s-tasks-list" maxlength="128" placeholder="@default">
+        <button id="fetch-lists" class="ghost-btn" style="margin-top:6px">fetch my lists</button>
+        <div id="task-lists-result" class="hint" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Data: export / import -->
+  <section class="s-section">
+    <div class="s-title">data</div>
+    <div class="s-row">
+      <label>Export</label>
+      <div>
+        <button id="export-btn" class="ghost-btn">export settings &amp; bookmarks</button>
+        <div class="hint">downloads a .json backup file</div>
+      </div>
+    </div>
+    <div class="s-row">
+      <label>Import</label>
+      <div>
+        <button id="import-btn" class="ghost-btn">import from file</button>
+        <input type="file" id="import-file" accept=".json" style="display:none">
+        <div class="hint">restores settings and bookmarks from a backup — credentials are never imported</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="save-bar">
+    <button id="save-btn" class="primary-btn">save settings</button>
+    <span id="save-msg" class="hint"></span>
+  </div>
+
+  <!-- Bookmarks -->
+  <section class="s-section" style="margin-top:48px">
+    <div class="s-title">bookmarks</div>
+    <table id="bm-table">
+      <thead>
+        <tr><th>title</th><th>url</th><th>category</th><th></th></tr>
+      </thead>
+      <tbody id="bm-tbody"></tbody>
+    </table>
+
+    <div class="add-bm-form">
+      <div class="add-field">
+        <label>title</label>
+        <input type="text" id="bm-title" maxlength="128" placeholder="GitHub">
+      </div>
+      <div class="add-field">
+        <label>url</label>
+        <input type="url" id="bm-url" maxlength="512" placeholder="https://github.com">
+      </div>
+      <div class="add-field">
+        <label>category</label>
+        <input type="text" id="bm-cat" maxlength="64" placeholder="Dev" list="cat-list">
+        <datalist id="cat-list"></datalist>
+      </div>
+      <div class="add-field" style="padding-top:18px">
+        <button id="bm-add" class="primary-btn">add</button>
+      </div>
+    </div>
+    <div id="bm-error" class="hint" style="color:#e05252;margin-top:6px"></div>
+  </section>
+</div>
+
+<script src="storage.js"></script>
+<script src="tasks.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>
