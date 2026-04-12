@@ -9,17 +9,17 @@ const Clock = (() => {
 
   function tick() {
     const now = new Date();
-    let h = now.getHours();
-    const m = now.getMinutes();
-    let ampm = '';
+    let h     = now.getHours();
+    const m   = now.getMinutes();
+    let ampm  = '';
 
     if (fmt === '12h') {
       ampm = h >= 12 ? ' pm' : ' am';
-      h = h % 12 || 12;
+      h    = h % 12 || 12;
     }
 
-    document.getElementById('clock-h').textContent = String(h).padStart(2, '0');
-    document.getElementById('clock-m').textContent = String(m).padStart(2, '0');
+    document.getElementById('clock-h').textContent   = String(h).padStart(2, '0');
+    document.getElementById('clock-m').textContent   = String(m).padStart(2, '0');
     document.getElementById('clock-ampm').textContent = ampm;
 
     const sep = document.querySelector('.sep');

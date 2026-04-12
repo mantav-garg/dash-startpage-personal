@@ -33,7 +33,7 @@
       <label>Custom greeting</label>
       <div>
         <input type="text" id="s-greeting" maxlength="128" placeholder="good to see you,">
-        <div class="hint">leave blank for default</div>
+        <div class="hint">leave blank for time-aware greeting</div>
       </div>
     </div>
     <div class="s-row">
@@ -66,7 +66,6 @@
       </div>
     </div>
 
-    <!-- Palette save/apply -->
     <div class="s-row" style="align-items:flex-start;margin-top:16px">
       <label style="padding-top:6px">Palettes</label>
       <div style="width:100%">
@@ -142,6 +141,24 @@
     </div>
   </section>
 
+  <!-- Favicon cache -->
+  <section class="s-section">
+    <div class="s-title">favicon cache</div>
+    <div class="s-row">
+      <label>Cache status</label>
+      <div>
+        <span id="favicon-cache-stats" class="hint">—</span>
+      </div>
+    </div>
+    <div class="s-row">
+      <label>Clear cache</label>
+      <div>
+        <button id="favicon-clear-btn" class="ghost-btn danger-btn">clear favicon cache</button>
+        <div class="hint">favicons will be re-fetched on next page load</div>
+      </div>
+    </div>
+  </section>
+
   <div class="save-bar">
     <button id="save-btn" class="primary-btn">save settings</button>
     <span id="save-msg" class="hint"></span>
@@ -184,11 +201,10 @@
     <div class="s-title">category order</div>
     <div class="hint" style="margin-bottom:14px">drag to reorder how bookmark categories appear on the startpage</div>
     <div id="cat-order-list"></div>
-    <div style="margin-top:12px;display:flex;gap:8px">
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
       <button id="cat-order-save" class="primary-btn">save order</button>
       <button id="cat-order-reset" class="ghost-btn">reset to alphabetical</button>
     </div>
-    <span id="cat-order-msg" class="hint" style="margin-left:8px"></span>
   </section>
 </div>
 

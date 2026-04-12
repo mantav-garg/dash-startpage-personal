@@ -1,10 +1,10 @@
 :root {
-  --bg:      #0d0d0d;
-  --surface: #161616;
-  --border:  #2a2a2a;
+  --bg:      #1e2326;
+  --surface: #374145;
+  --border:  #272e33;
   --text:    #e0e0e0;
-  --muted:   #555555;
-  --accent:  #7fba00;
+  --muted:   #7a8478;
+  --accent:  #a7c080;
   --font:    'JetBrains Mono', 'Courier New', monospace;
 }
 
@@ -147,7 +147,8 @@ button {
   100% { opacity: 0; }
 }
 
-/* ── Index page ──────────────────────────────────────── */
+/* ── Index page ──────────────────────────────────────────────────────────── */
+
 #main {
   height: 100vh;
   display: flex;
@@ -251,7 +252,7 @@ button {
 }
 .local-task-check:hover { color: var(--text); }
 
-/* Google Tasks specific */
+/* Google Tasks */
 .gtask-check {
   cursor: pointer;
   color: var(--accent);
@@ -261,6 +262,7 @@ button {
   user-select: none;
 }
 .gtask-check:hover { color: var(--text); }
+.gtask-check.task-btn-loading { opacity: 0.4; pointer-events: none; }
 
 .gtask-due {
   font-size: 9px;
@@ -305,12 +307,43 @@ button {
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Bookmark search */
+#bm-search-wrap {
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.bm-search-input {
+  width: 200px;
+  font-size: 11px;
+  padding: 4px 9px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: border-color 0.15s, color 0.15s, width 0.2s;
+}
+.bm-search-input::placeholder { color: var(--border); }
+.bm-search-input:focus {
+  border-color: var(--border);
+  color: var(--text);
+  outline: none;
+  width: 260px;
+}
+.bm-search-input:not(:placeholder-shown) {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 #bookmark-grid {
   display: flex;
   gap: 36px;
   align-items: flex-start;
+  flex: 1;
 }
 
 .bm-category { flex: 0 0 155px; }
@@ -394,6 +427,8 @@ button {
   #hero { padding: 64px 0 44px; }
   #content-row { flex-direction: column; gap: 36px; overflow: visible; }
   #tasks-col { flex: none; width: 100%; }
+  .bm-search-input { width: 100%; }
+  .bm-search-input:focus { width: 100%; }
 }
 
 /* Due date badge on google tasks */
@@ -411,25 +446,12 @@ button {
   opacity: 0.8;
 }
 
-/* ── Task state classes (replaces all inline style="" in tasks.js) ── */
+/* ── Task state classes ──────────────────────────────────────────────────── */
 
-/* Completed task row */
-.task-done { opacity: 0.38; }
-
-/* Completed task title */
-.task-strikethrough {
-  text-decoration: line-through;
-  text-decoration-color: var(--accent);
-}
-
-/* Error text in task list */
-.task-error-msg { color: #e05252; }
-
-/* Transient inline error prepended to task list */
-.task-inline-err {
-  color: #e05252;
-  font-size: 10px;
-}
+.task-done          { opacity: 0.38; }
+.task-strikethrough { text-decoration: line-through; text-decoration-color: var(--accent); }
+.task-error-msg     { color: #e05252; }
+.task-inline-err    { color: #e05252; font-size: 10px; }
 
 /* Google Tasks add-task row */
 #gtask-add-row {
@@ -444,7 +466,6 @@ button {
   gap: 6px;
 }
 
-/* Shared text input for both Google and local task add rows */
 .task-text-input {
   flex: 1;
   font-size: 11px;
@@ -452,7 +473,6 @@ button {
   min-width: 0;
 }
 
-/* Datetime picker for Google Tasks due date */
 .gtask-due-input {
   font-size: 10px;
   padding: 3px 7px;
@@ -462,10 +482,11 @@ button {
   border-radius: 3px;
   font-family: var(--font);
   width: 100%;
+  color-scheme: dark;
 }
 .gtask-due-input:focus { border-color: var(--accent); }
+.gtask-due-input::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
 
-/* Add button in task rows — tighter padding than default ghost-btn */
 .gtask-add-btn {
   padding: 3px 8px;
   font-size: 10px;

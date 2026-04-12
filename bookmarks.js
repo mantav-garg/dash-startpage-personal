@@ -3,66 +3,66 @@
 const FAVICON_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='2' fill='%231e1e1e'/%3E%3Crect x='4' y='4' width='8' height='1.5' rx='.75' fill='%23555'/%3E%3Crect x='4' y='7' width='6' height='1.5' rx='.75' fill='%23444'/%3E%3Crect x='4' y='10' width='4' height='1.5' rx='.75' fill='%23333'/%3E%3C/svg%3E";
 
 const Bookmarks = (() => {
-  function getDomain(url) {
+  const _inflight = new Map();
+
+  function _getDomain(url) {
     try { return new URL(url).hostname; }
     catch { return ''; }
   }
 
-  function isTruncated(el) {
+  function _isTruncated(el) {
     return el.scrollWidth > el.clientWidth;
-  }
-
-  const inflightFavicons = new Map();
-
-  async function fetch_favicon(domain) {
-    if (inflightFavicons.has(domain)) return inflightFavicons.get(domain);
-
-    const url = `https://favicon.im/${encodeURIComponent(domain)}?throw-error-on-404=true`;
-
-    const promise = (async () => {
-      let resp;
-      try {
-        resp = await fetch(url, { cache: "force-cache" });
-      } catch {
-        inflightFavicons.delete(domain);
-        return null;
-      }
-
-      if (!resp.ok) {
-        if (resp.status >= 400 && resp.status < 500) Storage.markFaviconFailed(domain);
-        inflightFavicons.delete(domain);
-        return null;
-      }
-
-      try {
-        const blob = await resp.blob();
-        const dataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => resolve(null);
-          reader.readAsDataURL(blob);
-        });
-        if (dataUrl) Storage.markFaviconOk(domain, dataUrl);
-        inflightFavicons.delete(domain);
-        return dataUrl;
-      } catch {
-        inflightFavicons.delete(domain);
-        return null;
-      }
-    })();
-
-    inflightFavicons.set(domain, promise);
-    return promise;
   }
 
   // Returns an ordered array of category names.
   // Saved order is respected; new categories are appended alphabetically.
-  function sortedCategories(cats) {
-    const saved = Storage.getCategoryOrder();
-    const all = Object.keys(cats).sort((a, b) => a.localeCompare(b));
+  function _sortedCategories(cats) {
+    const saved   = Storage.getCategoryOrder();
+    const all     = Object.keys(cats).sort((a, b) => a.localeCompare(b));
     const ordered = saved.filter(c => cats[c]);
-    const rest = all.filter(c => !ordered.includes(c));
+    const rest    = all.filter(c => !ordered.includes(c));
     return [...ordered, ...rest];
+  }
+
+  // Fetches favicon for a domain, converts to data URL, writes to cache.
+  // Returns data URL on success or null on failure.
+  // Deduplicates concurrent fetches for the same domain.
+  async function _fetchFavicon(domain) {
+    if (_inflight.has(domain)) return _inflight.get(domain);
+
+    const promise = (async () => {
+      const url = `https://favicon.im/${encodeURIComponent(domain)}?throw-error-on-404=true`;
+      let resp;
+      try {
+        resp = await fetch(url, { cache: 'force-cache' });
+      } catch {
+        return null;
+      } finally {
+        _inflight.delete(domain);
+      }
+
+      if (!resp.ok) {
+        if (resp.status >= 400 && resp.status < 500) Storage.markFaviconFailed(domain);
+        return null;
+      }
+
+      try {
+        const blob   = await resp.blob();
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload  = () => resolve(reader.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        });
+        if (dataUrl) Storage.markFaviconOk(domain, dataUrl);
+        return dataUrl;
+      } catch {
+        return null;
+      }
+    })();
+
+    _inflight.set(domain, promise);
+    return promise;
   }
 
   function render() {
@@ -77,7 +77,7 @@ const Bookmarks = (() => {
       cats[cat].push(bm);
     }
 
-    const sortedCats = sortedCategories(cats);
+    const sortedCats = _sortedCategories(cats);
     for (const cat of sortedCats) {
       cats[cat].sort((a, b) => a.title.localeCompare(b.title));
     }
@@ -101,7 +101,7 @@ const Bookmarks = (() => {
         a.className = 'bm-link';
         a.href = bm.url;
 
-        const domain = getDomain(bm.url);
+        const domain = _getDomain(bm.url);
         if (domain) {
           const img = document.createElement('img');
           img.className = 'bm-fav';
@@ -114,7 +114,7 @@ const Bookmarks = (() => {
             img.src = cached;
           } else {
             img.src = FAVICON_PLACEHOLDER;
-            fetch_favicon(domain).then(dataUrl => { if (dataUrl) img.src = dataUrl; });
+            _fetchFavicon(domain).then(dataUrl => { if (dataUrl) img.src = dataUrl; });
           }
 
           a.appendChild(img);
@@ -131,7 +131,7 @@ const Bookmarks = (() => {
         a.appendChild(tooltip);
 
         a.addEventListener('mouseenter', () => {
-          tooltip.style.display = isTruncated(titleSpan) ? 'block' : 'none';
+          tooltip.style.display = _isTruncated(titleSpan) ? 'block' : 'none';
         });
 
         list.appendChild(a);

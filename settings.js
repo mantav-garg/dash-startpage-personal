@@ -16,13 +16,19 @@ const COLOR_FIELDS = [
 ];
 
 const CSS_VAR_MAP = {
-  color_bg: '--bg', color_surface: '--surface', color_border: '--border',
-  color_text: '--text', color_muted: '--muted', color_accent: '--accent',
+  color_bg:      '--bg',
+  color_surface: '--surface',
+  color_border:  '--border',
+  color_text:    '--text',
+  color_muted:   '--muted',
+  color_accent:  '--accent',
 };
 
+// ── Utilities ──────────────────────────────────────────────────────────────────
+
 function sanitizeStr(val, max) { return String(val || '').trim().slice(0, max); }
-function isValidColor(v) { return /^#[0-9a-fA-F]{6}$/.test(v); }
-function isValidUrl(v) { return v.startsWith('http://') || v.startsWith('https://'); }
+function isValidColor(v)       { return /^#[0-9a-fA-F]{6}$/.test(v); }
+function isValidUrl(v)         { return v.startsWith('http://') || v.startsWith('https://'); }
 
 function escHtml(str) {
   const d = document.createElement('div');
@@ -33,7 +39,7 @@ function escHtml(str) {
 function showToast(msg) {
   document.querySelector('.toast')?.remove();
   const t = document.createElement('div');
-  t.className = 'toast';
+  t.className   = 'toast';
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2600);
@@ -56,36 +62,37 @@ function applyColorVar(key, val) {
 
 // ── Font ───────────────────────────────────────────────────────────────────────
 
+const _loadedFonts = new Set();
+
 function buildFontSelect(currentFont) {
   const sel = document.getElementById('s-font');
   sel.innerHTML = '';
   for (const f of FONTS) {
-    const opt = document.createElement('option');
-    opt.value = f;
+    const opt       = document.createElement('option');
+    opt.value       = f;
     opt.textContent = f;
     if (f === currentFont) opt.selected = true;
     sel.appendChild(opt);
   }
-  sel.addEventListener('change', () => updateFontPreview(sel.value));
+  sel.addEventListener('change', () => _updateFontPreview(sel.value));
 }
 
-const loadedFonts = new Set();
-function updateFontPreview(font) {
-  if (!loadedFonts.has(font)) {
+function _updateFontPreview(font) {
+  if (!_loadedFonts.has(font)) {
     const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400&display=swap`;
+    link.rel   = 'stylesheet';
+    link.href  = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400&display=swap`;
     document.head.appendChild(link);
-    loadedFonts.add(font);
+    _loadedFonts.add(font);
   }
   const el = document.getElementById('font-preview');
   if (el) el.style.fontFamily = `'${font}', monospace`;
   document.documentElement.style.setProperty('--font', `'${font}', 'Courier New', monospace`);
 }
 
-// ── Color grid + palette save ──────────────────────────────────────────────────
+// ── Color grid ─────────────────────────────────────────────────────────────────
 
-function getCurrentColors() {
+function _getCurrentColors() {
   const out = {};
   for (const { key } of COLOR_FIELDS) {
     out[key] = (document.getElementById(key)?.value || '').trim();
@@ -96,28 +103,38 @@ function getCurrentColors() {
 function buildColorGrid(s) {
   const grid = document.getElementById('color-grid');
   grid.innerHTML = '';
+
   for (const { key, label } of COLOR_FIELDS) {
-    const cell   = document.createElement('div');
+    const cell     = document.createElement('div');
     cell.className = 'color-cell';
-    const lbl    = document.createElement('label');
+
+    const lbl       = document.createElement('label');
     lbl.textContent = label;
     cell.appendChild(lbl);
-    const row    = document.createElement('div');
+
+    const row     = document.createElement('div');
     row.className = 'color-row';
-    const picker = document.createElement('input');
-    picker.type  = 'color';
-    picker.id    = `${key}_picker`;
-    picker.value = s[key];
-    const text   = document.createElement('input');
-    text.type    = 'text';
-    text.id      = key;
+
+    const picker   = document.createElement('input');
+    picker.type    = 'color';
+    picker.id      = `${key}_picker`;
+    picker.value   = s[key];
+
+    const text     = document.createElement('input');
+    text.type      = 'text';
+    text.id        = key;
     text.maxLength = 7;
-    text.value   = s[key];
-    text.pattern = '^#[0-9a-fA-F]{6}$';
-    picker.addEventListener('input', () => { text.value = picker.value; applyColorVar(key, picker.value); });
+    text.value     = s[key];
+    text.pattern   = '^#[0-9a-fA-F]{6}$';
+
+    picker.addEventListener('input', () => {
+      text.value = picker.value;
+      applyColorVar(key, picker.value);
+    });
     text.addEventListener('input', () => {
       if (isValidColor(text.value)) { picker.value = text.value; applyColorVar(key, text.value); }
     });
+
     row.appendChild(picker);
     row.appendChild(text);
     cell.appendChild(row);
@@ -126,7 +143,7 @@ function buildColorGrid(s) {
 
   document.getElementById('reset-colors').addEventListener('click', () => {
     for (const { key } of COLOR_FIELDS) {
-      const val = Storage.DEFAULTS[key];
+      const val    = Storage.DEFAULTS[key];
       const picker = document.getElementById(`${key}_picker`);
       const text   = document.getElementById(key);
       if (picker) picker.value = val;
@@ -136,27 +153,36 @@ function buildColorGrid(s) {
   });
 }
 
+// ── Palettes ───────────────────────────────────────────────────────────────────
+
 function bindPalette() {
-  renderPaletteList();
+  _renderPaletteList();
 
   document.getElementById('save-palette-btn').addEventListener('click', () => {
     const name = sanitizeStr(document.getElementById('palette-name').value, 48);
     if (!name) { showToast('enter a palette name'); return; }
+
     const s        = Storage.getSettings();
     const palettes = Array.isArray(s.saved_palettes) ? s.saved_palettes : [];
-    const colors   = getCurrentColors();
-    const idx = palettes.findIndex(p => p.name === name);
+    if (palettes.length >= Storage.MAX_PALETTES && !palettes.find(p => p.name === name)) {
+      showToast(`max ${Storage.MAX_PALETTES} palettes reached`);
+      return;
+    }
+
+    const colors = _getCurrentColors();
+    const idx    = palettes.findIndex(p => p.name === name);
     if (idx >= 0) palettes[idx] = { name, colors };
     else palettes.push({ name, colors });
+
     s.saved_palettes = palettes;
     Storage.saveSettings(s);
     document.getElementById('palette-name').value = '';
-    renderPaletteList();
+    _renderPaletteList();
     showToast(`palette "${name}" saved.`);
   });
 }
 
-function renderPaletteList() {
+function _renderPaletteList() {
   const s        = Storage.getSettings();
   const palettes = Array.isArray(s.saved_palettes) ? s.saved_palettes : [];
   const el       = document.getElementById('palette-list');
@@ -169,25 +195,25 @@ function renderPaletteList() {
 
   el.innerHTML = '';
   for (const p of palettes) {
-    const row = document.createElement('div');
+    const row     = document.createElement('div');
     row.className = 'palette-row';
 
-    const swatches = document.createElement('div');
+    const swatches     = document.createElement('div');
     swatches.className = 'palette-swatches';
     for (const { key } of COLOR_FIELDS) {
-      const sw = document.createElement('span');
-      sw.className = 'swatch';
+      const sw         = document.createElement('span');
+      sw.className     = 'swatch';
       sw.style.background = p.colors[key] || '#000';
-      sw.title = `${key}: ${p.colors[key]}`;
+      sw.title         = `${key}: ${p.colors[key]}`;
       swatches.appendChild(sw);
     }
 
-    const nameEl = document.createElement('span');
-    nameEl.className = 'palette-name-lbl';
+    const nameEl       = document.createElement('span');
+    nameEl.className   = 'palette-name-lbl';
     nameEl.textContent = p.name;
 
-    const applyBtn = document.createElement('button');
-    applyBtn.className = 'ghost-btn';
+    const applyBtn       = document.createElement('button');
+    applyBtn.className   = 'ghost-btn';
     applyBtn.textContent = 'apply';
     applyBtn.addEventListener('click', () => {
       for (const { key } of COLOR_FIELDS) {
@@ -202,14 +228,14 @@ function renderPaletteList() {
       showToast(`palette "${p.name}" applied.`);
     });
 
-    const delBtn = document.createElement('button');
-    delBtn.className = 'danger-btn';
+    const delBtn       = document.createElement('button');
+    delBtn.className   = 'danger-btn';
     delBtn.textContent = 'del';
     delBtn.addEventListener('click', () => {
-      const s2 = Storage.getSettings();
+      const s2         = Storage.getSettings();
       s2.saved_palettes = (s2.saved_palettes || []).filter(x => x.name !== p.name);
       Storage.saveSettings(s2);
-      renderPaletteList();
+      _renderPaletteList();
     });
 
     row.appendChild(swatches);
@@ -227,21 +253,18 @@ async function refreshAuthStatus() {
   const connectBtn    = document.getElementById('connect-btn');
   const disconnectBtn = document.getElementById('disconnect-btn');
 
-  function setConnected() {
+  const token = await Tasks.getValidToken();
+  if (token) {
     statusEl.textContent        = 'connected';
     statusEl.style.color        = 'var(--accent)';
     connectBtn.style.display    = 'none';
     disconnectBtn.style.display = 'inline-block';
-  }
-  function setDisconnected() {
+  } else {
     statusEl.textContent        = 'not connected';
     statusEl.style.color        = 'var(--muted)';
     connectBtn.style.display    = 'inline-block';
     disconnectBtn.style.display = 'none';
   }
-
-  const token = await Tasks.getValidToken();
-  if (token) setConnected(); else setDisconnected();
 }
 
 function bindAuthButtons() {
@@ -280,40 +303,47 @@ function bindAuthButtons() {
 function loadSettingsForm() {
   const s = Storage.getSettings();
   applyTheme(s);
+
   document.getElementById('s-name').value      = s.name;
   document.getElementById('s-greeting').value  = s.greeting_custom;
   document.querySelector(`input[name="clock_format"][value="${s.clock_format}"]`).checked = true;
-  document.getElementById('s-show-tasks').checked    = !!s.show_tasks;
-  document.getElementById('s-tasks-list').value      = s.tasks_list_id;
-  document.getElementById('s-oauth-client-id').value = s.oauth_client_id || '';
+  document.getElementById('s-show-tasks').checked     = !!s.show_tasks;
+  document.getElementById('s-tasks-list').value       = s.tasks_list_id;
+  document.getElementById('s-oauth-client-id').value  = s.oauth_client_id || '';
 
   const redirectEl = document.getElementById('redirect-uri-display');
   if (redirectEl) redirectEl.textContent = chrome.identity.getRedirectURL();
 
   buildFontSelect(s.font);
-  updateFontPreview(s.font);
+  _updateFontPreview(s.font);
   buildColorGrid(s);
+
   const fontLink = document.getElementById('font-link');
-  if (fontLink) fontLink.href = `https://fonts.googleapis.com/css2?family=${s.font.replace(/ /g, '+')}:wght@300;400;700&display=swap`;
+  if (fontLink) {
+    fontLink.href = `https://fonts.googleapis.com/css2?family=${s.font.replace(/ /g, '+')}:wght@300;400;700&display=swap`;
+  }
 }
 
 // ── Save settings ──────────────────────────────────────────────────────────────
 
 function bindSave() {
   document.getElementById('save-btn').addEventListener('click', () => {
-    const s = Storage.getSettings();
-    s.name            = sanitizeStr(document.getElementById('s-name').value, 64) || 'User';
+    const s       = Storage.getSettings();
+    s.name        = sanitizeStr(document.getElementById('s-name').value, 64) || 'User';
     s.greeting_custom = sanitizeStr(document.getElementById('s-greeting').value, 128);
     s.clock_format    = document.querySelector('input[name="clock_format"]:checked')?.value === '12h' ? '12h' : '24h';
     s.show_tasks      = document.getElementById('s-show-tasks').checked;
     s.tasks_list_id   = sanitizeStr(document.getElementById('s-tasks-list').value, 128);
     s.oauth_client_id = sanitizeStr(document.getElementById('s-oauth-client-id').value, 256);
-    const selFont     = document.getElementById('s-font').value;
-    s.font            = FONTS.includes(selFont) ? selFont : 'JetBrains Mono';
+
+    const selFont = document.getElementById('s-font').value;
+    s.font        = FONTS.includes(selFont) ? selFont : 'JetBrains Mono';
+
     for (const { key } of COLOR_FIELDS) {
       const val = (document.getElementById(key)?.value || '').trim();
       if (isValidColor(val)) s[key] = val;
     }
+
     Storage.saveSettings(s);
     applyTheme(s);
     showToast('saved.');
@@ -322,7 +352,7 @@ function bindSave() {
 
 // ── Bookmarks ──────────────────────────────────────────────────────────────────
 
-let editingId = null;
+let _editingId = null;
 
 function renderBookmarkTable() {
   const bms      = Storage.getBookmarks();
@@ -334,14 +364,14 @@ function renderBookmarkTable() {
     return cc !== 0 ? cc : a.title.localeCompare(b.title);
   });
 
-  const cats = [...new Set(bms.map(b => b.category))].sort();
+  const cats       = [...new Set(bms.map(b => b.category))].sort();
   datalist.innerHTML = cats.map(c => `<option value="${escHtml(c)}">`).join('');
 
   tbody.innerHTML = '';
   for (const bm of sorted) {
-    const isEditing = editingId === bm.id;
-    const tr = document.createElement('tr');
-    tr.dataset.id = bm.id;
+    const isEditing = _editingId === bm.id;
+    const tr        = document.createElement('tr');
+    tr.dataset.id   = bm.id;
 
     if (isEditing) {
       tr.innerHTML = `
@@ -366,11 +396,11 @@ function renderBookmarkTable() {
   }
 
   tbody.querySelectorAll('.edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => { editingId = btn.dataset.id; renderBookmarkTable(); });
+    btn.addEventListener('click', () => { _editingId = btn.dataset.id; renderBookmarkTable(); });
   });
 
   tbody.querySelectorAll('.cancel-edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => { editingId = null; renderBookmarkTable(); });
+    btn.addEventListener('click', () => { _editingId = null; renderBookmarkTable(); });
   });
 
   tbody.querySelectorAll('.save-edit-btn').forEach(btn => {
@@ -386,11 +416,10 @@ function renderBookmarkTable() {
       if (!isValidUrl(url)) { errEl.textContent = 'url must start with http:// or https://'; return; }
       errEl.textContent = '';
 
-      const bms2 = Storage.getBookmarks().map(b =>
-        b.id === id ? { ...b, title, url, category: cat } : b
+      Storage.saveBookmarks(
+        Storage.getBookmarks().map(b => b.id === id ? { ...b, title, url, category: cat } : b)
       );
-      Storage.saveBookmarks(bms2);
-      editingId = null;
+      _editingId = null;
       renderBookmarkTable();
       renderCategoryOrder();
       showToast('bookmark updated.');
@@ -399,9 +428,8 @@ function renderBookmarkTable() {
 
   tbody.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const updated = Storage.getBookmarks().filter(b => b.id !== btn.dataset.id);
-      Storage.saveBookmarks(updated);
-      if (editingId === btn.dataset.id) editingId = null;
+      Storage.saveBookmarks(Storage.getBookmarks().filter(b => b.id !== btn.dataset.id));
+      if (_editingId === btn.dataset.id) _editingId = null;
       renderBookmarkTable();
       renderCategoryOrder();
       showToast('removed.');
@@ -432,12 +460,7 @@ function bindAddBookmark() {
   });
 }
 
-// ── Category order (drag-and-drop) ────────────────────────────────────────────
-// Uses the HTML5 drag-and-drop API. Each row carries data-cat with the
-// category name. On drop, the in-memory order array is updated and the list
-// is re-rendered. Saving commits to localStorage via Storage.saveCategoryOrder.
-
-let dragSrc = null;
+// ── Category order ─────────────────────────────────────────────────────────────
 
 function renderCategoryOrder() {
   const el = document.getElementById('cat-order-list');
@@ -447,7 +470,6 @@ function renderCategoryOrder() {
   const saved = Storage.getCategoryOrder();
   const all   = [...new Set(bms.map(b => (b.category || 'Other').trim()))].sort((a, b) => a.localeCompare(b));
 
-  // Merge: saved order first, then alphabetical remainder
   const ordered = saved.filter(c => all.includes(c));
   const rest    = all.filter(c => !ordered.includes(c));
   const cats    = [...ordered, ...rest];
@@ -457,40 +479,42 @@ function renderCategoryOrder() {
     return;
   }
 
+  let _dragSrc = null;
+
   el.innerHTML = '';
   for (const cat of cats) {
-    const row = document.createElement('div');
-    row.className = 'cat-order-row';
-    row.draggable = true;
-    row.dataset.cat = cat;
-    row.innerHTML = `<span class="cat-order-handle">⠿</span><span class="cat-order-name">${escHtml(cat)}</span>`;
+    const row         = document.createElement('div');
+    row.className     = 'cat-order-row';
+    row.draggable     = true;
+    row.dataset.cat   = cat;
+    row.innerHTML     = `<span class="cat-order-handle">⠿</span><span class="cat-order-name">${escHtml(cat)}</span>`;
 
     row.addEventListener('dragstart', e => {
-      dragSrc = row;
+      _dragSrc = row;
       e.dataTransfer.effectAllowed = 'move';
       row.classList.add('dragging');
     });
     row.addEventListener('dragend', () => {
-      dragSrc = null;
+      _dragSrc = null;
       row.classList.remove('dragging');
       el.querySelectorAll('.cat-order-row').forEach(r => r.classList.remove('drag-over'));
     });
     row.addEventListener('dragover', e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      if (row !== dragSrc) {
+      if (row !== _dragSrc) {
         el.querySelectorAll('.cat-order-row').forEach(r => r.classList.remove('drag-over'));
         row.classList.add('drag-over');
       }
     });
     row.addEventListener('drop', e => {
       e.preventDefault();
-      if (!dragSrc || dragSrc === row) return;
-      const rows = [...el.querySelectorAll('.cat-order-row')];
-      const srcIdx  = rows.indexOf(dragSrc);
+      if (!_dragSrc || _dragSrc === row) return;
+      const rows    = [...el.querySelectorAll('.cat-order-row')];
+      const srcIdx  = rows.indexOf(_dragSrc);
       const destIdx = rows.indexOf(row);
-      if (srcIdx < destIdx) row.after(dragSrc);
-      else row.before(dragSrc);
+      if (srcIdx < destIdx) row.after(_dragSrc);
+      else row.before(_dragSrc);
       row.classList.remove('drag-over');
     });
 
@@ -502,12 +526,10 @@ function bindCategoryOrder() {
   renderCategoryOrder();
 
   document.getElementById('cat-order-save').addEventListener('click', () => {
-    const el = document.getElementById('cat-order-list');
+    const el    = document.getElementById('cat-order-list');
     const order = [...el.querySelectorAll('.cat-order-row')].map(r => r.dataset.cat);
     Storage.saveCategoryOrder(order);
-    const msg = document.getElementById('cat-order-msg');
-    msg.textContent = 'order saved.';
-    setTimeout(() => { msg.textContent = ''; }, 2000);
+    showToast('category order saved.');
   });
 
   document.getElementById('cat-order-reset').addEventListener('click', () => {
@@ -517,11 +539,30 @@ function bindCategoryOrder() {
   });
 }
 
+// ── Favicon cache management ───────────────────────────────────────────────────
+
+function bindFaviconCache() {
+  _renderFaviconStats();
+
+  document.getElementById('favicon-clear-btn').addEventListener('click', () => {
+    Storage.clearFaviconCache();
+    _renderFaviconStats();
+    showToast('favicon cache cleared.');
+  });
+}
+
+function _renderFaviconStats() {
+  const el = document.getElementById('favicon-cache-stats');
+  if (!el) return;
+  const { count, ok, failed, sizeKb } = Storage.getFaviconCacheStats();
+  el.textContent = `${count} entries (${ok} ok, ${failed} failed) — ${sizeKb} KB`;
+}
+
 // ── Fetch task lists ───────────────────────────────────────────────────────────
 
 function bindFetchLists() {
   document.getElementById('fetch-lists').addEventListener('click', async () => {
-    const el = document.getElementById('task-lists-result');
+    const el     = document.getElementById('task-lists-result');
     el.textContent = 'fetching…';
     try {
       const data  = await Tasks.fetchLists();
@@ -550,7 +591,7 @@ function bindExportImport() {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `startpage-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `dash_startpage-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     a.click();
     URL.revokeObjectURL(url);
     showToast('exported.');
@@ -573,6 +614,10 @@ function bindExportImport() {
           delete s.oauth_client_secret;
           delete s.oauth_client_id;
           delete s.google_auth_enabled;
+          // Cap imported palettes to prevent localStorage bloat
+          if (Array.isArray(s.saved_palettes)) {
+            s.saved_palettes = s.saved_palettes.slice(0, Storage.MAX_PALETTES);
+          }
           Storage.saveSettings(s);
           imported++;
         }
@@ -620,3 +665,4 @@ bindAddBookmark();
 bindFetchLists();
 bindExportImport();
 bindCategoryOrder();
+bindFaviconCache();
