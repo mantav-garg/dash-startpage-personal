@@ -19,14 +19,11 @@ const Tasks = (() => {
   function renderList(tasks, error, mode) {
     const el = document.getElementById('task-list');
     if (!el) return;
-
     if (mode === 'local') { renderLocalTasks(el); return; }
-
     if (error) {
       el.innerHTML = `<div class="task-item task-error-msg"><span>${sanitize(error)}</span></div>`;
       return;
     }
-
     renderGoogleTasks(el, tasks || []);
   }
 
@@ -37,18 +34,15 @@ const Tasks = (() => {
     const listId = s.tasks_list_id || '@default';
 
     const pending = tasks.filter(t => t.status !== 'completed');
-    const done = tasks.filter(t => t.status === 'completed');
+    const done    = tasks.filter(t => t.status === 'completed');
 
-    let html = '';
-
-    // All layout handled by #gtask-add-row and .gtask-add-controls in style.css
-    html += `
+    let html = `
       <div id="gtask-add-row">
         <div class="gtask-add-controls">
           <input type="text" id="gtask-input" class="task-text-input" placeholder="new task…">
           <button id="gtask-add-btn" class="ghost-btn gtask-add-btn">➕</button>
         </div>
-        <input type="datetime-local" id="gtask-due" class="gtask-due-input">
+        <input type="date" id="gtask-due" class="gtask-due-input" placeholder="due date (optional)">
       </div>`;
 
     if (pending.length) {
@@ -77,21 +71,20 @@ const Tasks = (() => {
         </div>`).join('');
     }
 
-
-
     el.innerHTML = html;
     bindGoogleTaskEvents(listId);
   }
 
   function bindGoogleTaskEvents(listId) {
     const addBtn = document.getElementById('gtask-add-btn');
-    const input = document.getElementById('gtask-input');
-    const dueEl = document.getElementById('gtask-due');
+    const input  = document.getElementById('gtask-input');
+    const dueEl  = document.getElementById('gtask-due');
 
     const doAdd = async () => {
       const title = (input?.value || '').trim().slice(0, 256);
       if (!title) return;
-      const due = dueEl?.value ? new Date(dueEl.value).toISOString() : null;
+      // Google Tasks due is RFC 3339 with time component; midnight UTC for date-only input.
+      const due = dueEl?.value ? `${dueEl.value}T00:00:00.000Z` : null;
       addBtn.disabled = true;
       try {
         await apiAddTask(listId, title, due);
@@ -110,7 +103,7 @@ const Tasks = (() => {
 
     document.querySelectorAll('.gtask-check').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
+        const id     = btn.dataset.id;
         const isDone = btn.dataset.done === 'true';
         btn.style.opacity = '0.4';
         try {
@@ -154,13 +147,10 @@ const Tasks = (() => {
   // ── On-device tasks ────────────────────────────────────────────────────────
 
   function renderLocalTasks(el) {
-    const all = Storage.getLocalTasks();
+    const all     = Storage.getLocalTasks();
     const pending = all.filter(t => !t.done);
-    const done = all.filter(t => t.done);
-    let html = '';
-
-    // Layout handled by #local-task-input-row in style.css
-    html += `
+    const done    = all.filter(t => t.done);
+    let html = `
       <div id="local-task-input-row">
         <input type="text" id="local-task-input" class="task-text-input" placeholder="new task…">
         <button id="local-task-add" class="ghost-btn gtask-add-btn">➕</button>
@@ -185,7 +175,6 @@ const Tasks = (() => {
           <span class="local-task-del" data-id="${sanitize(t.id)}" title="delete">❌</span>
         </div>`).join('');
     }
-
 
     el.innerHTML = html;
     bindLocalTaskEvents();
@@ -393,7 +382,7 @@ const Tasks = (() => {
   // ── Init ───────────────────────────────────────────────────────────────────
 
   async function init() {
-    const s = Storage.getSettings();
+    const s   = Storage.getSettings();
     const col = document.getElementById('tasks-col');
     const btn = document.getElementById('task-refresh');
 

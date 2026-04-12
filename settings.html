@@ -151,7 +151,6 @@
   <section class="s-section" style="margin-top:48px">
     <div class="s-title">bookmarks</div>
 
-    <!-- Add form at top so it's immediately visible -->
     <div class="add-bm-form" style="margin-bottom:20px">
       <div class="add-field">
         <label>title</label>
@@ -178,6 +177,18 @@
       </thead>
       <tbody id="bm-tbody"></tbody>
     </table>
+  </section>
+
+  <!-- Category order -->
+  <section class="s-section" style="margin-top:48px">
+    <div class="s-title">category order</div>
+    <div class="hint" style="margin-bottom:14px">drag to reorder how bookmark categories appear on the startpage</div>
+    <div id="cat-order-list"></div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button id="cat-order-save" class="primary-btn">save order</button>
+      <button id="cat-order-reset" class="ghost-btn">reset to alphabetical</button>
+    </div>
+    <span id="cat-order-msg" class="hint" style="margin-left:8px"></span>
   </section>
 </div>
 

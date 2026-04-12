@@ -28,8 +28,6 @@ const DEFAULT_BOOKMARKS = [
   { id: '6', title: 'Lobste.rs',     url: 'https://lobste.rs',             category: 'Reading' },
 ];
 
-// Cached data URLs are refreshed weekly. Failed (4xx) entries are suppressed
-// for 90 days so we never hit a dead URL again until it might have come back.
 const FAVICON_TTL      =  7 * 24 * 60 * 60 * 1000;
 const FAVICON_FAIL_TTL = 90 * 24 * 60 * 60 * 1000;
 const TASKS_TTL        =  5 * 60 * 1000;
@@ -66,14 +64,22 @@ const Storage = (() => {
     localStorage.setItem('sp_bookmarks', JSON.stringify(bms));
   }
 
+  // ── Category order ─────────────────────────────────────────────────────────
+  // Stored as an ordered array of category name strings.
+  // Categories not present in the array are appended alphabetically at the end.
+
+  function getCategoryOrder() {
+    try {
+      const raw = localStorage.getItem('sp_cat_order');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  function saveCategoryOrder(order) {
+    localStorage.setItem('sp_cat_order', JSON.stringify(order));
+  }
+
   // ── Favicon cache ──────────────────────────────────────────────────────────
-  //
-  // Entries: { dataUrl: string|null, ts: number, failed: boolean }
-  //
-  // getFavicon return contract:
-  //   undefined  → not cached (or TTL expired); caller must fetch
-  //   null       → confirmed 4xx; show placeholder, never re-fetch until 90d
-  //   string     → cached data URL (data:image/...); use directly, zero HTTP
 
   function getFaviconCache() {
     try {
@@ -86,10 +92,8 @@ const Storage = (() => {
     const cache = getFaviconCache();
     const entry = cache[domain];
     if (!entry) return undefined;
-
     const ttl = entry.failed ? FAVICON_FAIL_TTL : FAVICON_TTL;
-    if (Date.now() - entry.ts >= ttl) return undefined; // expired
-
+    if (Date.now() - entry.ts >= ttl) return undefined;
     return entry.failed ? null : (entry.dataUrl || undefined);
   }
 
@@ -168,6 +172,7 @@ const Storage = (() => {
   return {
     getSettings, saveSettings,
     getBookmarks, saveBookmarks,
+    getCategoryOrder, saveCategoryOrder,
     getFavicon, markFaviconOk, markFaviconFailed,
     getCachedTasks, setCachedTasks, invalidateTasksCache,
     getLocalTasks, saveLocalTasks,

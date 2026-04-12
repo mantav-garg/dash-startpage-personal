@@ -177,7 +177,7 @@ function renderPaletteList() {
     for (const { key } of COLOR_FIELDS) {
       const sw = document.createElement('span');
       sw.className = 'swatch';
-      sw.style.background = p.colors[key] || '#000'; // JS property — not blocked by CSP
+      sw.style.background = p.colors[key] || '#000';
       sw.title = `${key}: ${p.colors[key]}`;
       swatches.appendChild(sw);
     }
@@ -308,7 +308,6 @@ function bindSave() {
     s.show_tasks      = document.getElementById('s-show-tasks').checked;
     s.tasks_list_id   = sanitizeStr(document.getElementById('s-tasks-list').value, 128);
     s.oauth_client_id = sanitizeStr(document.getElementById('s-oauth-client-id').value, 256);
-    // oauth_client_secret intentionally not stored — implicit flow needs no secret
     const selFont     = document.getElementById('s-font').value;
     s.font            = FONTS.includes(selFont) ? selFont : 'JetBrains Mono';
     for (const { key } of COLOR_FIELDS) {
@@ -393,6 +392,7 @@ function renderBookmarkTable() {
       Storage.saveBookmarks(bms2);
       editingId = null;
       renderBookmarkTable();
+      renderCategoryOrder();
       showToast('bookmark updated.');
     });
   });
@@ -403,6 +403,7 @@ function renderBookmarkTable() {
       Storage.saveBookmarks(updated);
       if (editingId === btn.dataset.id) editingId = null;
       renderBookmarkTable();
+      renderCategoryOrder();
       showToast('removed.');
     });
   });
@@ -426,7 +427,93 @@ function bindAddBookmark() {
     document.getElementById('bm-url').value   = '';
     document.getElementById('bm-cat').value   = '';
     renderBookmarkTable();
+    renderCategoryOrder();
     showToast('bookmark added.');
+  });
+}
+
+// ── Category order (drag-and-drop) ────────────────────────────────────────────
+// Uses the HTML5 drag-and-drop API. Each row carries data-cat with the
+// category name. On drop, the in-memory order array is updated and the list
+// is re-rendered. Saving commits to localStorage via Storage.saveCategoryOrder.
+
+let dragSrc = null;
+
+function renderCategoryOrder() {
+  const el = document.getElementById('cat-order-list');
+  if (!el) return;
+
+  const bms   = Storage.getBookmarks();
+  const saved = Storage.getCategoryOrder();
+  const all   = [...new Set(bms.map(b => (b.category || 'Other').trim()))].sort((a, b) => a.localeCompare(b));
+
+  // Merge: saved order first, then alphabetical remainder
+  const ordered = saved.filter(c => all.includes(c));
+  const rest    = all.filter(c => !ordered.includes(c));
+  const cats    = [...ordered, ...rest];
+
+  if (!cats.length) {
+    el.innerHTML = `<span class="hint">no categories yet</span>`;
+    return;
+  }
+
+  el.innerHTML = '';
+  for (const cat of cats) {
+    const row = document.createElement('div');
+    row.className = 'cat-order-row';
+    row.draggable = true;
+    row.dataset.cat = cat;
+    row.innerHTML = `<span class="cat-order-handle">⠿</span><span class="cat-order-name">${escHtml(cat)}</span>`;
+
+    row.addEventListener('dragstart', e => {
+      dragSrc = row;
+      e.dataTransfer.effectAllowed = 'move';
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => {
+      dragSrc = null;
+      row.classList.remove('dragging');
+      el.querySelectorAll('.cat-order-row').forEach(r => r.classList.remove('drag-over'));
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (row !== dragSrc) {
+        el.querySelectorAll('.cat-order-row').forEach(r => r.classList.remove('drag-over'));
+        row.classList.add('drag-over');
+      }
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSrc || dragSrc === row) return;
+      const rows = [...el.querySelectorAll('.cat-order-row')];
+      const srcIdx  = rows.indexOf(dragSrc);
+      const destIdx = rows.indexOf(row);
+      if (srcIdx < destIdx) row.after(dragSrc);
+      else row.before(dragSrc);
+      row.classList.remove('drag-over');
+    });
+
+    el.appendChild(row);
+  }
+}
+
+function bindCategoryOrder() {
+  renderCategoryOrder();
+
+  document.getElementById('cat-order-save').addEventListener('click', () => {
+    const el = document.getElementById('cat-order-list');
+    const order = [...el.querySelectorAll('.cat-order-row')].map(r => r.dataset.cat);
+    Storage.saveCategoryOrder(order);
+    const msg = document.getElementById('cat-order-msg');
+    msg.textContent = 'order saved.';
+    setTimeout(() => { msg.textContent = ''; }, 2000);
+  });
+
+  document.getElementById('cat-order-reset').addEventListener('click', () => {
+    Storage.saveCategoryOrder([]);
+    renderCategoryOrder();
+    showToast('reset to alphabetical.');
   });
 }
 
@@ -440,7 +527,6 @@ function bindFetchLists() {
       const data  = await Tasks.fetchLists();
       const items = data.items || [];
       if (!items.length) { el.textContent = 'no lists found'; return; }
-      // Use CSS classes — no inline style="" attributes
       el.innerHTML = items.map(i =>
         `<div class="task-list-item"><code class="task-list-id">${escHtml(i.id)}</code> — ${escHtml(i.title)}</div>`
       ).join('');
@@ -477,8 +563,7 @@ function bindExportImport() {
     reader.onload = ev => {
       try {
         const data = JSON.parse(ev.target.result);
-        if (!data.settings && !data.bookmarks)
-          throw new Error('unrecognized format');
+        if (!data.settings && !data.bookmarks) throw new Error('unrecognized format');
 
         let imported = 0;
 
@@ -508,6 +593,7 @@ function bindExportImport() {
         if (!imported) throw new Error('nothing to import');
         loadSettingsForm();
         renderBookmarkTable();
+        renderCategoryOrder();
         showToast('imported — reload to apply theme.');
       } catch (err) {
         showToast(`import failed: ${err.message}`);
@@ -533,3 +619,4 @@ renderBookmarkTable();
 bindAddBookmark();
 bindFetchLists();
 bindExportImport();
+bindCategoryOrder();
