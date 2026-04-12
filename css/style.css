@@ -94,12 +94,13 @@ button {
   z-index: 100;
 }
 
+/* Settings link — always subtly visible, brightens on hover */
 #settings-btn {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-  opacity: 0;
+  opacity: 0.28;
   transition: opacity 0.2s, color 0.2s;
 }
 #settings-btn:hover {
@@ -181,6 +182,8 @@ button {
   letter-spacing: -0.025em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  /* cursor set via JS so it only applies when the element is interactive */
+  user-select: none;
 }
 
 .sep { color: var(--accent); }
@@ -239,6 +242,25 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Empty state — no bullet prefix */
+.task-empty-state::before { content: none; }
+.task-empty-state {
+  color: var(--accent);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+/* Task row fade-out before removal */
+@keyframes task-fade-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-12px); }
+}
+.task-fading {
+  animation: task-fade-out 0.22s ease-out forwards;
+  pointer-events: none;
 }
 
 /* Local task check button */
@@ -376,13 +398,21 @@ button {
   text-overflow: ellipsis;
   transition: color 0.1s;
   position: relative;
+  border-radius: 2px;
+  outline: none;
 }
-.bm-link:hover {
+.bm-link:hover,
+.bm-link:focus {
   color: var(--text);
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-color: var(--accent);
+}
+/* Keyboard focus ring — visible but not intrusive */
+.bm-link:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .bm-fav {
@@ -392,7 +422,8 @@ button {
   opacity: 0.45;
   image-rendering: -webkit-optimize-contrast;
 }
-.bm-link:hover .bm-fav { opacity: 1; }
+.bm-link:hover .bm-fav,
+.bm-link:focus .bm-fav { opacity: 1; }
 
 .bm-title {
   overflow: hidden;

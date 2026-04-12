@@ -17,7 +17,6 @@
     fontLink.href = `https://fonts.googleapis.com/css2?family=${s.font.replace(/ /g, '+')}:wght@300;400;700&display=swap`;
   }
 
-  // Time-aware greeting with emoji
   const greetingEl = document.getElementById('greeting');
   if (greetingEl) {
     if (s.greeting_custom) {
@@ -38,6 +37,15 @@
   Tasks.init();
 })();
 
+// Click the clock to toggle 12h / 24h format.
+(function () {
+  const clockEl = document.getElementById('clock');
+  if (!clockEl) return;
+  clockEl.style.cursor = 'pointer';
+  clockEl.title        = 'click to toggle 12h / 24h';
+  clockEl.addEventListener('click', () => Clock.toggle());
+})();
+
 // Translate vertical wheel scroll → horizontal scroll on the bookmark column.
 (function () {
   const col = document.getElementById('bookmarks-col');
@@ -49,20 +57,59 @@
   }, { passive: false });
 })();
 
-// Keyboard shortcut: / or Ctrl+K → focus bookmark search input.
-// Esc → clear and blur.
+// Keyboard shortcuts for bookmark search.
+// /  or Ctrl+K → focus input
+// ↓  from input → move into results
+// ↑/↓ within results → navigate
+// Enter on a result → open link
+// Esc → clear + blur (or return to input from a result)
 (function () {
   const input = document.getElementById('bm-search');
   if (!input) return;
 
+  function visibleLinks() {
+    return [...document.querySelectorAll('#bookmark-grid .bm-link')]
+      .filter(a => a.style.display !== 'none');
+  }
+
   document.addEventListener('keydown', (e) => {
-    const tag = document.activeElement?.tagName;
+    const tag     = document.activeElement?.tagName;
     const inInput = tag === 'INPUT' || tag === 'TEXTAREA';
 
+    // Esc from search → clear + blur
     if (e.key === 'Escape' && document.activeElement === input) {
       input.value = '';
       input.dispatchEvent(new Event('input'));
       input.blur();
+      return;
+    }
+
+    // Esc from a bookmark → back to search
+    if (e.key === 'Escape' && document.activeElement?.classList.contains('bm-link')) {
+      e.preventDefault();
+      input.focus();
+      return;
+    }
+
+    // ↓ from search input → first visible link
+    if (e.key === 'ArrowDown' && document.activeElement === input) {
+      e.preventDefault();
+      visibleLinks()[0]?.focus();
+      return;
+    }
+
+    // ↑ / ↓ within bookmark links
+    if (document.activeElement?.classList.contains('bm-link')) {
+      const links = visibleLinks();
+      const idx   = links.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        links[idx + 1]?.focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (idx === 0) input.focus();
+        else links[idx - 1]?.focus();
+      }
       return;
     }
 
@@ -76,7 +123,7 @@
   });
 
   input.addEventListener('input', () => {
-    const q = input.value.trim().toLowerCase();
+    const q    = input.value.trim().toLowerCase();
     const grid = document.getElementById('bookmark-grid');
     if (!grid) return;
 

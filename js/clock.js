@@ -5,7 +5,8 @@ const Clock = (() => {
   const MONTHS = ['January','February','March','April','May','June',
                   'July','August','September','October','November','December'];
 
-  let fmt = '24h';
+  let fmt      = '24h';
+  let _timer   = null;
 
   function tick() {
     const now = new Date();
@@ -18,8 +19,8 @@ const Clock = (() => {
       h    = h % 12 || 12;
     }
 
-    document.getElementById('clock-h').textContent   = String(h).padStart(2, '0');
-    document.getElementById('clock-m').textContent   = String(m).padStart(2, '0');
+    document.getElementById('clock-h').textContent    = String(h).padStart(2, '0');
+    document.getElementById('clock-m').textContent    = String(m).padStart(2, '0');
     document.getElementById('clock-ampm').textContent = ampm;
 
     const sep = document.querySelector('.sep');
@@ -31,9 +32,18 @@ const Clock = (() => {
 
   function init(format) {
     fmt = format || '24h';
+    if (_timer) clearInterval(_timer);
     tick();
-    setInterval(tick, 1000);
+    _timer = setInterval(tick, 1000);
   }
 
-  return { init };
+  function toggle() {
+    const s  = Storage.getSettings();
+    fmt      = fmt === '24h' ? '12h' : '24h';
+    s.clock_format = fmt;
+    Storage.saveSettings(s);
+    tick();
+  }
+
+  return { init, toggle };
 })();

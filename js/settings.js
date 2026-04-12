@@ -24,6 +24,39 @@ const CSS_VAR_MAP = {
   color_accent:  '--accent',
 };
 
+// 24 built-in TUI color schemes — apply only, never stored in user palettes.
+const BUILTIN_PALETTES = [
+  { name: 'Gruvbox Dark',         colors: { color_bg: '#282828', color_surface: '#3c3836', color_border: '#504945', color_text: '#ebdbb2', color_muted: '#928374', color_accent: '#b8bb26' } },
+  { name: 'Gruvbox Light',        colors: { color_bg: '#fbf1c7', color_surface: '#f2e5bc', color_border: '#d5c4a1', color_text: '#3c3836', color_muted: '#7c6f64', color_accent: '#79740e' } },
+  { name: 'Catppuccin Mocha',     colors: { color_bg: '#1e1e2e', color_surface: '#313244', color_border: '#45475a', color_text: '#cdd6f4', color_muted: '#6c7086', color_accent: '#cba6f7' } },
+  { name: 'Catppuccin Macchiato', colors: { color_bg: '#24273a', color_surface: '#363a4f', color_border: '#494d64', color_text: '#cad3f5', color_muted: '#6e738d', color_accent: '#c6a0f6' } },
+  { name: 'Catppuccin Frappé',    colors: { color_bg: '#303446', color_surface: '#414559', color_border: '#51576d', color_text: '#c6d0f5', color_muted: '#737994', color_accent: '#ca9ee6' } },
+  { name: 'Catppuccin Latte',     colors: { color_bg: '#eff1f5', color_surface: '#e6e9ef', color_border: '#ccd0da', color_text: '#4c4f69', color_muted: '#8c8fa1', color_accent: '#8839ef' } },
+  { name: 'Nord',                 colors: { color_bg: '#2e3440', color_surface: '#3b4252', color_border: '#434c5e', color_text: '#eceff4', color_muted: '#616e88', color_accent: '#88c0d0' } },
+  { name: 'Tokyo Night',          colors: { color_bg: '#1a1b26', color_surface: '#24283b', color_border: '#292e42', color_text: '#c0caf5', color_muted: '#565f89', color_accent: '#7aa2f7' } },
+  { name: 'Tokyo Day',            colors: { color_bg: '#e1e2e7', color_surface: '#d5d6db', color_border: '#c4c8da', color_text: '#3760bf', color_muted: '#848cb5', color_accent: '#2496be' } },
+  { name: 'Monokai',              colors: { color_bg: '#272822', color_surface: '#3e3d32', color_border: '#49483e', color_text: '#f8f8f2', color_muted: '#75715e', color_accent: '#a6e22e' } },
+  { name: 'Dracula',              colors: { color_bg: '#282a36', color_surface: '#383a59', color_border: '#6272a4', color_text: '#f8f8f2', color_muted: '#6272a4', color_accent: '#ff79c6' } },
+  { name: 'Solarized Dark',       colors: { color_bg: '#002b36', color_surface: '#073642', color_border: '#094555', color_text: '#839496', color_muted: '#586e75', color_accent: '#268bd2' } },
+  { name: 'Solarized Light',      colors: { color_bg: '#fdf6e3', color_surface: '#eee8d5', color_border: '#d3cbb7', color_text: '#657b83', color_muted: '#93a1a1', color_accent: '#268bd2' } },
+  { name: 'One Dark',             colors: { color_bg: '#282c34', color_surface: '#353b45', color_border: '#3e4451', color_text: '#abb2bf', color_muted: '#5c6370', color_accent: '#61afef' } },
+  { name: 'Ayu Dark',             colors: { color_bg: '#0d1017', color_surface: '#131721', color_border: '#1e2430', color_text: '#bfbdb6', color_muted: '#5c6773', color_accent: '#e6b450' } },
+  { name: 'Ayu Mirage',           colors: { color_bg: '#1f2430', color_surface: '#232834', color_border: '#333a4c', color_text: '#cbccc6', color_muted: '#5c6773', color_accent: '#ffad66' } },
+  { name: 'Everforest Dark',      colors: { color_bg: '#2d353b', color_surface: '#343f44', color_border: '#3d484d', color_text: '#d3c6aa', color_muted: '#7a8478', color_accent: '#a7c080' } },
+  { name: 'Rosé Pine',            colors: { color_bg: '#191724', color_surface: '#26233a', color_border: '#403d52', color_text: '#e0def4', color_muted: '#6e6a86', color_accent: '#ebbcba' } },
+  { name: 'Rosé Pine Moon',       colors: { color_bg: '#232136', color_surface: '#2a273f', color_border: '#44415a', color_text: '#e0def4', color_muted: '#6e6a86', color_accent: '#ea9a97' } },
+  { name: 'Kanagawa',             colors: { color_bg: '#1f1f28', color_surface: '#2a2a37', color_border: '#363646', color_text: '#dcd7ba', color_muted: '#727169', color_accent: '#7e9cd8' } },
+  { name: 'Horizon',              colors: { color_bg: '#1c1e26', color_surface: '#232530', color_border: '#2e303e', color_text: '#d5d8da', color_muted: '#6c6f93', color_accent: '#e95678' } },
+  { name: 'Material Dark',        colors: { color_bg: '#212121', color_surface: '#303030', color_border: '#424242', color_text: '#eeffff', color_muted: '#546e7a', color_accent: '#80cbc4' } },
+  { name: 'Poimandres',           colors: { color_bg: '#1b1e28', color_surface: '#252837', color_border: '#303347', color_text: '#a6accd', color_muted: '#506477', color_accent: '#5de4c7' } },
+  { name: 'Chalk',                colors: { color_bg: '#151515', color_surface: '#202020', color_border: '#303030', color_text: '#d0d0d0', color_muted: '#808080', color_accent: '#fb9fb1' } },
+];
+
+const BM_PAGE_SIZE = 15;
+
+let _isDirty = false;
+function _markDirty() { _isDirty = true; }
+
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
 function sanitizeStr(val, max) { return String(val || '').trim().slice(0, max); }
@@ -58,6 +91,18 @@ function applyTheme(s) {
 function applyColorVar(key, val) {
   const cssVar = CSS_VAR_MAP[key];
   if (cssVar) document.documentElement.style.setProperty(cssVar, val);
+}
+
+function _applyColors(colors) {
+  for (const { key } of COLOR_FIELDS) {
+    const val = colors[key];
+    if (!val) continue;
+    const picker = document.getElementById(`${key}_picker`);
+    const text   = document.getElementById(key);
+    if (picker) picker.value = val;
+    if (text)   text.value   = val;
+    applyColorVar(key, val);
+  }
 }
 
 // ── Font ───────────────────────────────────────────────────────────────────────
@@ -130,9 +175,11 @@ function buildColorGrid(s) {
     picker.addEventListener('input', () => {
       text.value = picker.value;
       applyColorVar(key, picker.value);
+      _markDirty();
     });
     text.addEventListener('input', () => {
       if (isValidColor(text.value)) { picker.value = text.value; applyColorVar(key, text.value); }
+      _markDirty();
     });
 
     row.appendChild(picker);
@@ -150,10 +197,54 @@ function buildColorGrid(s) {
       if (text)   text.value   = val;
       applyColorVar(key, val);
     }
+    _markDirty();
   });
 }
 
-// ── Palettes ───────────────────────────────────────────────────────────────────
+// ── Built-in palettes ──────────────────────────────────────────────────────────
+
+function renderBuiltinPalettes() {
+  const el = document.getElementById('builtin-palette-list');
+  if (!el) return;
+
+  el.innerHTML = '';
+  let _active = null;
+
+  for (const p of BUILTIN_PALETTES) {
+    const card     = document.createElement('div');
+    card.className = 'builtin-palette-card';
+    card.title     = `Click to preview ${p.name}`;
+
+    const swatches     = document.createElement('div');
+    swatches.className = 'builtin-swatches';
+    for (const { key } of COLOR_FIELDS) {
+      const sw         = document.createElement('span');
+      sw.className     = 'builtin-swatch';
+      sw.style.background = p.colors[key] || '#000';
+      swatches.appendChild(sw);
+    }
+
+    const nameEl       = document.createElement('span');
+    nameEl.className   = 'builtin-name';
+    nameEl.textContent = p.name;
+
+    card.appendChild(swatches);
+    card.appendChild(nameEl);
+
+    card.addEventListener('click', () => {
+      _active?.classList.remove('previewing');
+      card.classList.add('previewing');
+      _active = card;
+      _applyColors(p.colors);
+      _markDirty();
+      showToast(`previewing "${p.name}" — save to keep`);
+    });
+
+    el.appendChild(card);
+  }
+}
+
+// ── User palettes ──────────────────────────────────────────────────────────────
 
 function bindPalette() {
   _renderPaletteList();
@@ -189,7 +280,7 @@ function _renderPaletteList() {
   if (!el) return;
 
   if (!palettes.length) {
-    el.innerHTML = `<span class="hint">no saved palettes</span>`;
+    el.innerHTML = `<span class="hint">no saved palettes yet</span>`;
     return;
   }
 
@@ -216,15 +307,8 @@ function _renderPaletteList() {
     applyBtn.className   = 'ghost-btn';
     applyBtn.textContent = 'apply';
     applyBtn.addEventListener('click', () => {
-      for (const { key } of COLOR_FIELDS) {
-        const val = p.colors[key];
-        if (!val) continue;
-        const picker = document.getElementById(`${key}_picker`);
-        const text   = document.getElementById(key);
-        if (picker) picker.value = val;
-        if (text)   text.value   = val;
-        applyColorVar(key, val);
-      }
+      _applyColors(p.colors);
+      _markDirty();
       showToast(`palette "${p.name}" applied.`);
     });
 
@@ -232,7 +316,7 @@ function _renderPaletteList() {
     delBtn.className   = 'danger-btn';
     delBtn.textContent = 'del';
     delBtn.addEventListener('click', () => {
-      const s2         = Storage.getSettings();
+      const s2          = Storage.getSettings();
       s2.saved_palettes = (s2.saved_palettes || []).filter(x => x.name !== p.name);
       Storage.saveSettings(s2);
       _renderPaletteList();
@@ -304,12 +388,12 @@ function loadSettingsForm() {
   const s = Storage.getSettings();
   applyTheme(s);
 
-  document.getElementById('s-name').value      = s.name;
-  document.getElementById('s-greeting').value  = s.greeting_custom;
+  document.getElementById('s-name').value     = s.name;
+  document.getElementById('s-greeting').value = s.greeting_custom;
   document.querySelector(`input[name="clock_format"][value="${s.clock_format}"]`).checked = true;
-  document.getElementById('s-show-tasks').checked     = !!s.show_tasks;
-  document.getElementById('s-tasks-list').value       = s.tasks_list_id;
-  document.getElementById('s-oauth-client-id').value  = s.oauth_client_id || '';
+  document.getElementById('s-show-tasks').checked    = !!s.show_tasks;
+  document.getElementById('s-tasks-list').value      = s.tasks_list_id;
+  document.getElementById('s-oauth-client-id').value = s.oauth_client_id || '';
 
   const redirectEl = document.getElementById('redirect-uri-display');
   if (redirectEl) redirectEl.textContent = chrome.identity.getRedirectURL();
@@ -326,49 +410,136 @@ function loadSettingsForm() {
 
 // ── Save settings ──────────────────────────────────────────────────────────────
 
+function _doSave() {
+  const s           = Storage.getSettings();
+  s.name            = sanitizeStr(document.getElementById('s-name').value, 64) || 'User';
+  s.greeting_custom = sanitizeStr(document.getElementById('s-greeting').value, 128);
+  s.clock_format    = document.querySelector('input[name="clock_format"]:checked')?.value === '12h' ? '12h' : '24h';
+  s.show_tasks      = document.getElementById('s-show-tasks').checked;
+  s.tasks_list_id   = sanitizeStr(document.getElementById('s-tasks-list').value, 128);
+  s.oauth_client_id = sanitizeStr(document.getElementById('s-oauth-client-id').value, 256);
+
+  const selFont = document.getElementById('s-font').value;
+  s.font        = FONTS.includes(selFont) ? selFont : 'JetBrains Mono';
+
+  for (const { key } of COLOR_FIELDS) {
+    const val = (document.getElementById(key)?.value || '').trim();
+    if (isValidColor(val)) s[key] = val;
+  }
+
+  Storage.saveSettings(s);
+  applyTheme(s);
+  showToast('saved.');
+}
+
 function bindSave() {
-  document.getElementById('save-btn').addEventListener('click', () => {
-    const s       = Storage.getSettings();
-    s.name        = sanitizeStr(document.getElementById('s-name').value, 64) || 'User';
-    s.greeting_custom = sanitizeStr(document.getElementById('s-greeting').value, 128);
-    s.clock_format    = document.querySelector('input[name="clock_format"]:checked')?.value === '12h' ? '12h' : '24h';
-    s.show_tasks      = document.getElementById('s-show-tasks').checked;
-    s.tasks_list_id   = sanitizeStr(document.getElementById('s-tasks-list').value, 128);
-    s.oauth_client_id = sanitizeStr(document.getElementById('s-oauth-client-id').value, 256);
+  const doSaveAndClear = () => { _isDirty = false; _doSave(); };
 
-    const selFont = document.getElementById('s-font').value;
-    s.font        = FONTS.includes(selFont) ? selFont : 'JetBrains Mono';
+  document.getElementById('save-btn-nav').addEventListener('click', doSaveAndClear);
 
-    for (const { key } of COLOR_FIELDS) {
-      const val = (document.getElementById(key)?.value || '').trim();
-      if (isValidColor(val)) s[key] = val;
+  // Ctrl+S / Cmd+S
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      doSaveAndClear();
     }
+  });
 
-    Storage.saveSettings(s);
-    applyTheme(s);
-    showToast('saved.');
+  // Warn before leaving with unsaved changes
+  window.addEventListener('beforeunload', e => {
+    if (!_isDirty) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
+  // Mark dirty on settings form changes (color pickers mark dirty themselves)
+  document.querySelectorAll(
+    '#settings-wrap input:not([type="file"]):not([type="color"]), #settings-wrap select'
+  ).forEach(el => el.addEventListener('input', _markDirty));
+  document.querySelectorAll('input[name="clock_format"]').forEach(r =>
+    r.addEventListener('change', _markDirty)
+  );
+}
+
+function bindClientIdToggle() {
+  const btn   = document.getElementById('toggle-client-id');
+  const field = document.getElementById('s-oauth-client-id');
+  if (!btn || !field) return;
+  btn.addEventListener('click', () => {
+    const hidden    = field.type === 'password';
+    field.type      = hidden ? 'text' : 'password';
+    btn.textContent = hidden ? 'hide' : 'show';
   });
 }
 
 // ── Bookmarks ──────────────────────────────────────────────────────────────────
 
-let _editingId = null;
+let _editingId   = null;
+let _bmPage      = 1;
+let _bmFilter    = '';
+let _bmCatFilter = '';
 
-function renderBookmarkTable() {
-  const bms      = Storage.getBookmarks();
-  const tbody    = document.getElementById('bm-tbody');
-  const datalist = document.getElementById('cat-list');
-
+function _getFilteredBookmarks() {
+  const bms = Storage.getBookmarks();
+  const q   = _bmFilter.toLowerCase();
   const sorted = [...bms].sort((a, b) => {
     const cc = a.category.localeCompare(b.category);
     return cc !== 0 ? cc : a.title.localeCompare(b.title);
   });
+  return sorted.filter(b => {
+    const matchCat  = !_bmCatFilter || b.category === _bmCatFilter;
+    const matchText = !q
+      || b.title.toLowerCase().includes(q)
+      || b.url.toLowerCase().includes(q)
+      || b.category.toLowerCase().includes(q);
+    return matchCat && matchText;
+  });
+}
 
-  const cats       = [...new Set(bms.map(b => b.category))].sort();
+function _refreshCatDropdown() {
+  const sel = document.getElementById('bm-cat-filter');
+  if (!sel) return;
+  const bms  = Storage.getBookmarks();
+  const cats = [...new Set(bms.map(b => b.category))].sort((a, b) => a.localeCompare(b));
+
+  sel.innerHTML = '<option value="">all categories</option>';
+  for (const c of cats) {
+    const opt = document.createElement('option');
+    opt.value = opt.textContent = c;
+    if (c === _bmCatFilter) opt.selected = true;
+    sel.appendChild(opt);
+  }
+
+  // If the previously selected category no longer exists, reset
+  if (_bmCatFilter && !cats.includes(_bmCatFilter)) _bmCatFilter = '';
+}
+
+function renderBookmarkTable() {
+  _refreshCatDropdown();
+
+  const filtered = _getFilteredBookmarks();
+  const total    = filtered.length;
+  const pages    = Math.max(1, Math.ceil(total / BM_PAGE_SIZE));
+  if (_bmPage > pages) _bmPage = pages;
+
+  const start   = (_bmPage - 1) * BM_PAGE_SIZE;
+  const visible = filtered.slice(start, start + BM_PAGE_SIZE);
+
+  const tbody    = document.getElementById('bm-tbody');
+  const datalist = document.getElementById('cat-list');
+  const countEl  = document.getElementById('bm-count');
+
+  const allBms = Storage.getBookmarks();
+  const cats   = [...new Set(allBms.map(b => b.category))].sort();
   datalist.innerHTML = cats.map(c => `<option value="${escHtml(c)}">`).join('');
 
+  if (countEl) {
+    const suffix = _bmFilter || _bmCatFilter ? ` of ${allBms.length} total` : '';
+    countEl.textContent = `${total} bookmark${total !== 1 ? 's' : ''}${suffix}`;
+  }
+
   tbody.innerHTML = '';
-  for (const bm of sorted) {
+  for (const bm of visible) {
     const isEditing = _editingId === bm.id;
     const tr        = document.createElement('tr');
     tr.dataset.id   = bm.id;
@@ -412,7 +583,7 @@ function renderBookmarkTable() {
       const cat   = sanitizeStr(tr2.querySelector('.edit-cat').value, 64) || 'Other';
       const errEl = document.getElementById('bm-error');
 
-      if (!title || !url) { errEl.textContent = 'title and url are required'; return; }
+      if (!title || !url)   { errEl.textContent = 'title and url are required'; return; }
       if (!isValidUrl(url)) { errEl.textContent = 'url must start with http:// or https://'; return; }
       errEl.textContent = '';
 
@@ -435,6 +606,46 @@ function renderBookmarkTable() {
       showToast('removed.');
     });
   });
+
+  _renderPagination(pages);
+}
+
+function _renderPagination(pages) {
+  const el = document.getElementById('bm-pagination');
+  if (!el) return;
+  el.innerHTML = '';
+  if (pages <= 1) return;
+
+  const prev = document.createElement('button');
+  prev.className   = 'page-btn';
+  prev.textContent = '←';
+  prev.disabled    = _bmPage === 1;
+  prev.addEventListener('click', () => { _bmPage--; renderBookmarkTable(); });
+  el.appendChild(prev);
+
+  for (let i = 1; i <= pages; i++) {
+    if (pages > 7 && i > 2 && i < pages - 1 && Math.abs(i - _bmPage) > 1) {
+      if (i === 3 || i === pages - 2) {
+        const dots = document.createElement('span');
+        dots.className   = 'page-ellipsis';
+        dots.textContent = '…';
+        el.appendChild(dots);
+      }
+      continue;
+    }
+    const btn = document.createElement('button');
+    btn.className   = `page-btn${i === _bmPage ? ' active' : ''}`;
+    btn.textContent = String(i);
+    btn.addEventListener('click', () => { _bmPage = i; renderBookmarkTable(); });
+    el.appendChild(btn);
+  }
+
+  const next = document.createElement('button');
+  next.className   = 'page-btn';
+  next.textContent = '→';
+  next.disabled    = _bmPage === pages;
+  next.addEventListener('click', () => { _bmPage++; renderBookmarkTable(); });
+  el.appendChild(next);
 }
 
 function bindAddBookmark() {
@@ -444,7 +655,7 @@ function bindAddBookmark() {
     const cat   = sanitizeStr(document.getElementById('bm-cat').value, 64) || 'Other';
     const errEl = document.getElementById('bm-error');
 
-    if (!title || !url) { errEl.textContent = 'title and url are required'; return; }
+    if (!title || !url)   { errEl.textContent = 'title and url are required'; return; }
     if (!isValidUrl(url)) { errEl.textContent = 'url must start with http:// or https://'; return; }
     errEl.textContent = '';
 
@@ -454,9 +665,31 @@ function bindAddBookmark() {
     document.getElementById('bm-title').value = '';
     document.getElementById('bm-url').value   = '';
     document.getElementById('bm-cat').value   = '';
+
+    // Navigate to the last page so the new entry is visible
+    _bmCatFilter = '';
+    _bmFilter    = '';
+    document.getElementById('bm-filter').value    = '';
+    document.getElementById('bm-cat-filter').value = '';
+    _bmPage = Math.ceil(bms.length / BM_PAGE_SIZE);
+
     renderBookmarkTable();
     renderCategoryOrder();
     showToast('bookmark added.');
+  });
+
+  // Text filter
+  document.getElementById('bm-filter').addEventListener('input', e => {
+    _bmFilter = e.target.value.trim();
+    _bmPage   = 1;
+    renderBookmarkTable();
+  });
+
+  // Category dropdown filter
+  document.getElementById('bm-cat-filter').addEventListener('change', e => {
+    _bmCatFilter = e.target.value;
+    _bmPage      = 1;
+    renderBookmarkTable();
   });
 }
 
@@ -483,11 +716,11 @@ function renderCategoryOrder() {
 
   el.innerHTML = '';
   for (const cat of cats) {
-    const row         = document.createElement('div');
-    row.className     = 'cat-order-row';
-    row.draggable     = true;
-    row.dataset.cat   = cat;
-    row.innerHTML     = `<span class="cat-order-handle">⠿</span><span class="cat-order-name">${escHtml(cat)}</span>`;
+    const row       = document.createElement('div');
+    row.className   = 'cat-order-row';
+    row.draggable   = true;
+    row.dataset.cat = cat;
+    row.innerHTML   = `<span class="cat-order-handle">⠿</span><span class="cat-order-name">${escHtml(cat)}</span>`;
 
     row.addEventListener('dragstart', e => {
       _dragSrc = row;
@@ -539,7 +772,7 @@ function bindCategoryOrder() {
   });
 }
 
-// ── Favicon cache management ───────────────────────────────────────────────────
+// ── Favicon cache ──────────────────────────────────────────────────────────────
 
 function bindFaviconCache() {
   _renderFaviconStats();
@@ -562,7 +795,7 @@ function _renderFaviconStats() {
 
 function bindFetchLists() {
   document.getElementById('fetch-lists').addEventListener('click', async () => {
-    const el     = document.getElementById('task-lists-result');
+    const el = document.getElementById('task-lists-result');
     el.textContent = 'fetching…';
     try {
       const data  = await Tasks.fetchLists();
@@ -614,7 +847,6 @@ function bindExportImport() {
           delete s.oauth_client_secret;
           delete s.oauth_client_id;
           delete s.google_auth_enabled;
-          // Cap imported palettes to prevent localStorage bloat
           if (Array.isArray(s.saved_palettes)) {
             s.saved_palettes = s.saved_palettes.slice(0, Storage.MAX_PALETTES);
           }
@@ -636,6 +868,9 @@ function bindExportImport() {
         }
 
         if (!imported) throw new Error('nothing to import');
+        _bmPage      = 1;
+        _bmFilter    = '';
+        _bmCatFilter = '';
         loadSettingsForm();
         renderBookmarkTable();
         renderCategoryOrder();
@@ -653,10 +888,29 @@ function bindExportImport() {
   });
 }
 
+// ── Jump nav: highlight active section on scroll ───────────────────────────────
+
+function bindJumpNav() {
+  const sections = document.querySelectorAll('.s-section[id]');
+  const links    = document.querySelectorAll('.jump-link');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === `#${entry.target.id}`);
+      });
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────────
 
 loadSettingsForm();
 bindSave();
+renderBuiltinPalettes();
 bindPalette();
 bindAuthButtons();
 refreshAuthStatus();
@@ -666,3 +920,5 @@ bindFetchLists();
 bindExportImport();
 bindCategoryOrder();
 bindFaviconCache();
+bindJumpNav();
+bindClientIdToggle();

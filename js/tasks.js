@@ -29,6 +29,14 @@ const Tasks = (() => {
 
   // ── Google Tasks render ────────────────────────────────────────────────────
 
+  function _emptyStateMsg() {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 12) return '☀️ all clear — good morning!';
+    if (h >= 12 && h < 17) return '✓ nothing pending — enjoy your afternoon';
+    if (h >= 17 && h < 21) return '✓ all done for today';
+    return '🌙 nothing pending — rest well';
+  }
+
   function _renderGoogleTasks(el, tasks) {
     const listId  = Storage.getSettings().tasks_list_id || '@default';
     const pending = tasks.filter(t => t.status !== 'completed');
@@ -57,7 +65,7 @@ const Tasks = (() => {
           </div>`;
       }).join('');
     } else {
-      html += `<div class="task-item muted"><span>no pending tasks</span></div>`;
+      html += `<div class="task-item task-empty-state"><span>${_emptyStateMsg()}</span></div>`;
     }
 
     if (done.length) {
@@ -71,6 +79,14 @@ const Tasks = (() => {
 
     el.innerHTML = html;
     _bindGoogleTaskEvents(listId);
+  }
+
+  // Fades out a task row, then runs callback.
+  function _fadeRow(taskId, callback) {
+    const row = document.querySelector(`.task-item[data-id="${CSS.escape(taskId)}"]`);
+    if (!row) { callback(); return; }
+    row.classList.add('task-fading');
+    row.addEventListener('animationend', callback, { once: true });
   }
 
   function _bindGoogleTaskEvents(listId) {
@@ -103,21 +119,30 @@ const Tasks = (() => {
         const id     = btn.dataset.id;
         const isDone = btn.dataset.done === 'true';
         btn.classList.add('task-btn-loading');
+
+        // Optimistic UI: mark visually before API call settles.
+        const row = btn.closest('.task-item');
+        if (row && !isDone) {
+          row.querySelector('.local-task-title')?.classList.add('task-strikethrough');
+        }
+
         try {
           await _apiPatchTask(listId, id, { status: isDone ? 'needsAction' : 'completed' });
-          await _reloadGoogleTasks(listId);
+          _fadeRow(id, () => _reloadGoogleTasks(listId));
         } catch (e) {
           _showInlineError(e.message);
           btn.classList.remove('task-btn-loading');
+          row?.querySelector('.local-task-title')?.classList.remove('task-strikethrough');
         }
       });
     });
 
     document.querySelectorAll('.gtask-del').forEach(btn => {
       btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
         try {
-          await _apiDeleteTask(listId, btn.dataset.id);
-          await _reloadGoogleTasks(listId);
+          await _apiDeleteTask(listId, id);
+          _fadeRow(id, () => _reloadGoogleTasks(listId));
         } catch (e) {
           _showInlineError(e.message);
         }
@@ -129,7 +154,7 @@ const Tasks = (() => {
     const el = document.getElementById('task-list');
     if (!el) return;
     const err = document.createElement('div');
-    err.className = 'task-item task-inline-err';
+    err.className   = 'task-item task-inline-err';
     err.textContent = msg;
     el.prepend(err);
     setTimeout(() => err.remove(), 4000);
@@ -155,18 +180,18 @@ const Tasks = (() => {
 
     if (pending.length) {
       html += pending.map(t => `
-        <div class="task-item local-task">
+        <div class="task-item local-task" data-id="${_esc(t.id)}">
           <span class="local-task-check" data-id="${_esc(t.id)}" data-done="false" title="mark done">✅</span>
           <span class="local-task-title">${_esc(t.title)}</span>
           <span class="local-task-del" data-id="${_esc(t.id)}" title="delete">❌</span>
         </div>`).join('');
     } else {
-      html += `<div class="task-item muted"><span>no pending tasks</span></div>`;
+      html += `<div class="task-item task-empty-state"><span>${_emptyStateMsg()}</span></div>`;
     }
 
     if (done.length) {
       html += done.map(t => `
-        <div class="task-item local-task task-done">
+        <div class="task-item local-task task-done" data-id="${_esc(t.id)}">
           <span class="local-task-check" data-id="${_esc(t.id)}" data-done="true" title="mark undone">↩️</span>
           <span class="local-task-title task-strikethrough">${_esc(t.title)}</span>
           <span class="local-task-del" data-id="${_esc(t.id)}" title="delete">❌</span>
@@ -184,17 +209,36 @@ const Tasks = (() => {
     });
     document.querySelectorAll('.local-task-check').forEach(btn => {
       btn.addEventListener('click', () => {
+        const id     = btn.dataset.id;
         const isDone = btn.dataset.done === 'true';
-        Storage.saveLocalTasks(
-          Storage.getLocalTasks().map(t => t.id === btn.dataset.id ? { ...t, done: !isDone } : t)
-        );
-        renderList(null, null, 'local');
+        const row    = btn.closest('.task-item');
+
+        if (!isDone) {
+          row?.querySelector('.local-task-title')?.classList.add('task-strikethrough');
+          row?.classList.add('task-fading');
+          row?.addEventListener('animationend', () => {
+            Storage.saveLocalTasks(
+              Storage.getLocalTasks().map(t => t.id === id ? { ...t, done: true } : t)
+            );
+            renderList(null, null, 'local');
+          }, { once: true });
+        } else {
+          Storage.saveLocalTasks(
+            Storage.getLocalTasks().map(t => t.id === id ? { ...t, done: false } : t)
+          );
+          renderList(null, null, 'local');
+        }
       });
     });
     document.querySelectorAll('.local-task-del').forEach(btn => {
       btn.addEventListener('click', () => {
-        Storage.saveLocalTasks(Storage.getLocalTasks().filter(t => t.id !== btn.dataset.id));
-        renderList(null, null, 'local');
+        const id  = btn.dataset.id;
+        const row = btn.closest('.task-item');
+        row?.classList.add('task-fading');
+        row?.addEventListener('animationend', () => {
+          Storage.saveLocalTasks(Storage.getLocalTasks().filter(t => t.id !== id));
+          renderList(null, null, 'local');
+        }, { once: true });
       });
     });
   }
@@ -275,9 +319,9 @@ const Tasks = (() => {
           const token         = params.get('access_token');
           const error         = params.get('error');
 
-          if (error)                       { reject(new Error(error)); return; }
-          if (returnedState !== state)     { reject(new Error('state mismatch')); return; }
-          if (!token)                      { reject(new Error('no token returned')); return; }
+          if (error)                   { reject(new Error(error)); return; }
+          if (returnedState !== state) { reject(new Error('state mismatch')); return; }
+          if (!token)                  { reject(new Error('no token returned')); return; }
 
           const expiresIn = parseInt(params.get('expires_in') || '3600', 10);
           resolve({ access_token: token, expires_at: Date.now() + expiresIn * 1000 });
@@ -350,8 +394,7 @@ const Tasks = (() => {
   }
 
   async function fetchLists() {
-    const data = await _apiFetch('GET', '/users/@me/lists');
-    return data;
+    return _apiFetch('GET', '/users/@me/lists');
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────

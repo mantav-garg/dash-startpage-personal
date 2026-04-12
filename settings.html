@@ -7,13 +7,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link id="font-link" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="settings.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/settings.css">
 </head>
 <body>
 
+<!-- Fixed top bar: back + save -->
 <nav id="top-nav">
-  <a id="settings-btn" href="index.html">[ ← back ]</a>
+  <a id="back-btn" href="index.html">[ ← back ]</a>
+  
+  <a class="jump-link" href="#sec-general">general</a>
+  <a class="jump-link" href="#sec-appearance">appearance</a>
+  <a class="jump-link" href="#sec-tasks">tasks</a>
+  <a class="jump-link" href="#sec-data">data</a>
+  <a class="jump-link" href="#sec-favicon">favicon</a>
+  <a class="jump-link" href="#sec-categories">categories</a>
+  <a class="jump-link" href="#sec-bookmarks">bookmarks</a>
+
+  <button id="save-btn-nav" class="primary-btn nav-save-btn">save settings</button>
 </nav>
 
 <div id="settings-wrap">
@@ -23,7 +34,7 @@
   </div>
 
   <!-- General -->
-  <section class="s-section">
+  <section class="s-section" id="sec-general">
     <div class="s-title">general</div>
     <div class="s-row">
       <label>Your name</label>
@@ -46,7 +57,7 @@
   </section>
 
   <!-- Appearance -->
-  <section class="s-section">
+  <section class="s-section" id="sec-appearance">
     <div class="s-title">appearance</div>
     <div class="s-row">
       <label>Font</label>
@@ -61,13 +72,21 @@
     </div>
     <div class="s-row">
       <label></label>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button id="reset-colors" class="ghost-btn">reset to defaults</button>
+      <button id="reset-colors" class="ghost-btn">reset to defaults</button>
+    </div>
+
+    <!-- Built-in themes -->
+    <div class="s-row" style="align-items:flex-start;margin-top:24px">
+      <label style="padding-top:4px">Built-in themes</label>
+      <div style="width:100%">
+        <div class="hint" style="margin-bottom:12px">click to preview · save settings to persist</div>
+        <div id="builtin-palette-list"></div>
       </div>
     </div>
 
-    <div class="s-row" style="align-items:flex-start;margin-top:16px">
-      <label style="padding-top:6px">Palettes</label>
+    <!-- My palettes -->
+    <div class="s-row" style="align-items:flex-start;margin-top:24px">
+      <label style="padding-top:4px">My palettes</label>
       <div style="width:100%">
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <input type="text" id="palette-name" maxlength="48" placeholder="palette name…" style="flex:1;max-width:200px">
@@ -79,7 +98,7 @@
   </section>
 
   <!-- Google Tasks -->
-  <section class="s-section">
+  <section class="s-section" id="sec-tasks">
     <div class="s-title">tasks</div>
     <div class="s-row">
       <label>Show tasks</label>
@@ -92,10 +111,15 @@
     <div class="s-row">
       <label>Client ID</label>
       <div>
-        <input type="text" id="s-oauth-client-id" maxlength="256" placeholder="xxxxxx.apps.googleusercontent.com">
+        <div style="display:flex;gap:6px;align-items:center;max-width:360px">
+          <input type="password" id="s-oauth-client-id" maxlength="256"
+                 placeholder="xxxxxx.apps.googleusercontent.com" style="flex:1">
+          <button type="button" id="toggle-client-id" class="ghost-btn"
+                  style="flex-shrink:0;padding:5px 8px;font-size:10px">show</button>
+        </div>
         <div class="hint">
           from Google Cloud Console → Credentials → OAuth client ID (Chrome extension)<br>
-          redirect URI to register in Cloud Console:<br>
+          redirect URI to register:<br>
           <code id="redirect-uri-display" style="color:var(--accent);font-size:10px;user-select:all">loading…</code>
         </div>
       </div>
@@ -105,8 +129,8 @@
       <div>
         <div id="auth-status" class="hint">checking…</div>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="connect-btn" class="primary-btn" style="display:none">connect google account</button>
-          <button id="disconnect-btn" class="ghost-btn danger-btn" style="display:none">disconnect</button>
+          <button id="connect-btn"    class="primary-btn"           style="display:none">connect google account</button>
+          <button id="disconnect-btn" class="ghost-btn danger-btn"  style="display:none">disconnect</button>
         </div>
         <div class="hint" style="margin-top:6px">when not connected, on-device tasks are shown instead</div>
       </div>
@@ -121,8 +145,8 @@
     </div>
   </section>
 
-  <!-- Data: export / import -->
-  <section class="s-section">
+  <!-- Data -->
+  <section class="s-section" id="sec-data">
     <div class="s-title">data</div>
     <div class="s-row">
       <label>Export</label>
@@ -136,19 +160,17 @@
       <div>
         <button id="import-btn" class="ghost-btn">import from file</button>
         <input type="file" id="import-file" accept=".json" style="display:none">
-        <div class="hint">restores settings and bookmarks from a backup — credentials are never imported</div>
+        <div class="hint">restores settings and bookmarks — credentials are never imported</div>
       </div>
     </div>
   </section>
 
   <!-- Favicon cache -->
-  <section class="s-section">
+  <section class="s-section" id="sec-favicon">
     <div class="s-title">favicon cache</div>
     <div class="s-row">
       <label>Cache status</label>
-      <div>
-        <span id="favicon-cache-stats" class="hint">—</span>
-      </div>
+      <span id="favicon-cache-stats" class="hint">—</span>
     </div>
     <div class="s-row">
       <label>Clear cache</label>
@@ -159,13 +181,19 @@
     </div>
   </section>
 
-  <div class="save-bar">
-    <button id="save-btn" class="primary-btn">save settings</button>
-    <span id="save-msg" class="hint"></span>
-  </div>
+  <!-- Category order — above bookmarks -->
+  <section class="s-section" id="sec-categories" style="margin-top:48px">
+    <div class="s-title">category order</div>
+    <div class="hint" style="margin-bottom:14px">drag to reorder how categories appear on the startpage</div>
+    <div id="cat-order-list"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <button id="cat-order-save"  class="primary-btn">save order</button>
+      <button id="cat-order-reset" class="ghost-btn">reset to alphabetical</button>
+    </div>
+  </section>
 
   <!-- Bookmarks -->
-  <section class="s-section" style="margin-top:48px">
+  <section class="s-section" id="sec-bookmarks" style="margin-top:48px">
     <div class="s-title">bookmarks</div>
 
     <div class="add-bm-form" style="margin-bottom:20px">
@@ -188,28 +216,37 @@
     </div>
     <div id="bm-error" class="hint" style="color:#e05252;margin-bottom:10px"></div>
 
+    <!-- Filter row: text + category dropdown + count -->
+    <div id="bm-table-controls">
+      <input  type="text" id="bm-filter"    class="bm-filter-input" placeholder="search…" autocomplete="off">
+      <select id="bm-cat-filter" class="bm-cat-select">
+        <option value="">all categories</option>
+      </select>
+      <span id="bm-count" class="hint"></span>
+    </div>
+
     <table id="bm-table">
       <thead>
         <tr><th>title</th><th>url</th><th>category</th><th></th></tr>
       </thead>
       <tbody id="bm-tbody"></tbody>
     </table>
-  </section>
 
-  <!-- Category order -->
-  <section class="s-section" style="margin-top:48px">
-    <div class="s-title">category order</div>
-    <div class="hint" style="margin-bottom:14px">drag to reorder how bookmark categories appear on the startpage</div>
-    <div id="cat-order-list"></div>
-    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-      <button id="cat-order-save" class="primary-btn">save order</button>
-      <button id="cat-order-reset" class="ghost-btn">reset to alphabetical</button>
-    </div>
+    <div id="bm-pagination"></div>
   </section>
 </div>
 
-<script src="storage.js"></script>
-<script src="tasks.js"></script>
-<script src="settings.js"></script>
+<!-- Fixed footer: only on settings page -->
+<footer id="settings-footer">
+  <a href="https://github.com/its0din-ai/dash-startpage"><span class="footer-brand">💀 dash startpage</span></a>
+  <span class="footer-sep">·</span>
+  <span>v0.4.2</span>
+  <span class="footer-sep">·</span>
+  <span>built with monospace obsession</span>
+</footer>
+
+<script src="js/storage.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/settings.js"></script>
 </body>
 </html>
