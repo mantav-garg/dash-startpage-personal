@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Dash",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A minimal monospace startpage.",
   "chrome_url_overrides": {
     "newtab": "index.html"
@@ -9,10 +9,11 @@
   "permissions": ["storage", "identity"],
   "host_permissions": [
     "https://tasks.googleapis.com/*",
-    "https://favicon.im/*"
+    "https://favicon.im/*",
+    "https://a.favicon.im/*"
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://favicon.im; connect-src https://favicon.im https://tasks.googleapis.com https://fonts.googleapis.com https://oauth2.googleapis.com https://www.google.com https://*.gstatic.com"
+    "extension_pages": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://favicon.im https://a.favicon.im; connect-src https://favicon.im https://a.favicon.im https://tasks.googleapis.com https://fonts.googleapis.com https://oauth2.googleapis.com https://www.google.com https://*.gstatic.com"
   },
   "icons": {
     "16":  "icons/icon.png",
