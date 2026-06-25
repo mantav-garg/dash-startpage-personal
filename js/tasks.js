@@ -104,6 +104,13 @@ const Tasks = (() => {
         input.value = '';
         dueEl.value = '';
         await _reloadGoogleTasks(listId);
+
+        // to keep focus on task input
+        const inp =
+            document.getElementById('gtask-input') ||
+            document.getElementById('local-task-input');
+
+        inp?.focus();
       } catch (e) {
         _showInlineError(e.message);
       } finally {
@@ -251,6 +258,13 @@ const Tasks = (() => {
     tasks.push({ id: String(Date.now()), title, done: false });
     Storage.saveLocalTasks(tasks);
     renderList(null, null, 'local');
+
+    // to keep th focus on the task input
+    const inp =
+        document.getElementById('gtask-input') ||
+        document.getElementById('local-task-input');
+
+    inp?.focus();
   }
 
   // ── Google Tasks API ───────────────────────────────────────────────────────

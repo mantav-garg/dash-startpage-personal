@@ -1,21 +1,12 @@
 # 💀 DashStartpage
 
+> This is a modified version of the original repo, i have added shortcut to open the `tasks input` using shortcut `t` and also the functionality to `esc` from it and keep on entering newe tasks in one go by pressing enter consequentially. 
+
 > A minimal, monospaced browser startpage that gets out of your way - and actually stays out of your way.
 
 Every time you open a new tab, you get exactly what you need: the time, your tasks, and your bookmarks - nothing else. No widgets, no news feed, no distractions. Just a fast, keyboard-driven launchpad with the aesthetic of a terminal and the polish of a product you'd actually pay for.
 
 Syncs your Google Tasks bidirectionally, so the to-do you added on your phone shows up here, and vice versa. Falls back gracefully to on-device tasks when you're offline or unauthenticated. Your OAuth token never touches disk - it lives in RAM and dies when the browser closes.
-
----
-
-## Screenshots
-
-![Homepage](img/1.jpg)
-![Bookmark Search](img/2.jpg)
-![Settings](img/3.jpg)
-![Color Pallete](img/4.jpg)
-![Task Integration](img/5.jpg)
-![Bookmark Ordering](img/6.jpg)
 
 ---
 
@@ -181,13 +172,16 @@ Clicking a palette previews it live. Hit **Save Settings** to persist.
 | Key | Action |
 | ----- | -------- |
 | `/` or `Ctrl+K` | Focus bookmark search |
+| `t` | Focus on new task input box |
 | `↓` from search | Move focus to first result |
 | `↑` / `↓` in results | Navigate bookmark links |
 | `Enter` on a result | Open link |
 | `Esc` from search | Clear and blur |
 | `Esc` from result | Return focus to search input |
+| `Esc` from new task input | Clear and blur |
 | Click clock | Toggle 12h / 24h |
 | `Ctrl+S` / `Cmd+S` | Save settings (settings page) |
+
 
 ---
 

@@ -3,7 +3,7 @@
 // Everything else → localStorage (no credentials ever).
 
 const DEFAULTS = Object.freeze({
-  name:                'Jane Doe',
+  name:                'Mantav',
   clock_format:        '12h',
   greeting_custom:     '',
   font:                'JetBrains Mono',
@@ -24,42 +24,20 @@ const DEFAULT_BOOKMARKS = [
   { id: 'db01', title: 'GitHub',          url: 'https://github.com',                 category: 'Dev'          },
   { id: 'db02', title: 'MDN Web Docs',    url: 'https://developer.mozilla.org',      category: 'Dev'          },
   { id: 'db03', title: 'Stack Overflow',  url: 'https://stackoverflow.com',          category: 'Dev'          },
-  { id: 'db04', title: 'Can I Use',       url: 'https://caniuse.com',                category: 'Dev'          },
-  { id: 'db05', title: 'DevDocs',         url: 'https://devdocs.io',                 category: 'Dev'          },
-  { id: 'db06', title: 'Bundlephobia',    url: 'https://bundlephobia.com',           category: 'Dev'          },
   // Reading
   { id: 'db07', title: 'Hacker News',     url: 'https://news.ycombinator.com',       category: 'Reading'      },
   { id: 'db08', title: 'Lobste.rs',       url: 'https://lobste.rs',                  category: 'Reading'      },
   { id: 'db09', title: 'The Verge',       url: 'https://theverge.com',               category: 'Reading'      },
-  { id: 'db10', title: 'Ars Technica',    url: 'https://arstechnica.com',            category: 'Reading'      },
-  { id: 'db11', title: 'Quanta Magazine', url: 'https://quantamagazine.org',         category: 'Reading'      },
   // Tools
   { id: 'db12', title: 'Excalidraw',      url: 'https://excalidraw.com',             category: 'Tools'        },
   { id: 'db13', title: 'Regex101',        url: 'https://regex101.com',               category: 'Tools'        },
   { id: 'db14', title: 'JSON Crack',      url: 'https://jsoncrack.com',              category: 'Tools'        },
-  { id: 'db15', title: 'Squoosh',         url: 'https://squoosh.app',                category: 'Tools'        },
-  { id: 'db16', title: 'Transform',       url: 'https://transform.tools',            category: 'Tools'        },
-  { id: 'db17', title: 'Crontab Guru',    url: 'https://crontab.guru',               category: 'Tools'        },
-  // Design
-  { id: 'db18', title: 'Figma',           url: 'https://figma.com',                  category: 'Design'       },
-  { id: 'db19', title: 'Dribbble',        url: 'https://dribbble.com',               category: 'Design'       },
-  { id: 'db20', title: 'Coolors',         url: 'https://coolors.co',                 category: 'Design'       },
-  { id: 'db21', title: 'Fonts In Use',    url: 'https://fontsinuse.com',             category: 'Design'       },
-  // AI
-  { id: 'db22', title: 'Claude',          url: 'https://claude.ai',                  category: 'AI'           },
-  { id: 'db23', title: 'ChatGPT',         url: 'https://chatgpt.com',                category: 'AI'           },
-  { id: 'db24', title: 'Perplexity',      url: 'https://perplexity.ai',              category: 'AI'           },
-  { id: 'db25', title: 'v0',              url: 'https://v0.dev',                     category: 'AI'           },
-  // Productivity
-  { id: 'db26', title: 'Notion',          url: 'https://notion.so',                  category: 'Productivity' },
-  { id: 'db27', title: 'Linear',          url: 'https://linear.app',                 category: 'Productivity' },
-  { id: 'db28', title: 'Obsidian',        url: 'https://obsidian.md',                category: 'Productivity' },
 ];
 
-const FAVICON_TTL      =  7 * 24 * 60 * 60 * 1000;
-const FAVICON_FAIL_TTL = 90 * 24 * 60 * 60 * 1000;
-const TASKS_TTL        =  5 * 60 * 1000;
-const MAX_PALETTES     = 20;
+const FAVICON_TTL      = 1460 * 24 * 60 * 60 * 1000;
+const FAVICON_FAIL_TTL =   90 * 24 * 60 * 60 * 1000;
+const TASKS_TTL        =    5 * 60 * 1000;
+const MAX_PALETTES     =   20;
 
 const Storage = (() => {
   let _faviconCache = null;

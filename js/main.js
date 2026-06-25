@@ -113,8 +113,28 @@
       return;
     }
 
+    const taskInput = document.getElementById('gtask-input') || document.getElementById('local-task-input');
+
+    if (e.key === 'Escape' && document.activeElement === taskInput) {
+        e.preventDefault();
+        taskInput.value = '';
+        taskInput.blur();
+        return;
+    }
+
     if (inInput) return;
 
+    if (e.key === 't' && !inInput) {
+    e.preventDefault();
+
+    if (taskInput) {
+        taskInput.focus();
+        taskInput.select();
+    }
+
+    return;
+}
+    
     if (e.key === '/' || (e.ctrlKey && e.key === 'k')) {
       e.preventDefault();
       input.focus();
