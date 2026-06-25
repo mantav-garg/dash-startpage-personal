@@ -1,4 +1,6 @@
-# 💀 DashStartpage
+# 👀 DashStartpage
+
+> The performed changes are done without the actual understanding of the working of the project, i just used AI to fix what i wanted to change at the moment, so use with caution, and preferably use the original repo's code
 
 > This is a modified version of the original repo, i have added shortcut to open the `tasks input` using shortcut `t` and also the functionality to `esc` from it and keep on entering newe tasks in one go by pressing enter consequentially. 
 
